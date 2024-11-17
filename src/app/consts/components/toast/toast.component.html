@@ -1,0 +1,7 @@
+<!-- toast.component.html -->
+<div *ngIf="isVisible" class="toast" [ngClass]="{'toast-success': messageType === 'success', 'toast-error': messageType === 'error'}">
+    <div class="toast-icon">{{ messageType === 'success' ? '✔️' : '❌' }}</div>
+    <div class="toast-message">{{ message }}</div>
+  </div>
+  
+  

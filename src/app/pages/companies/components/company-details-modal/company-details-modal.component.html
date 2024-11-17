@@ -1,0 +1,44 @@
+<div>
+  <nz-tabset>
+    <!-- Onglet 1 : Informations de Base -->
+    <nz-tab nzTitle="Informations Générales">
+      <ul *ngIf="company">
+        <li>Nom : {{ company.name }}</li>
+        <li>Description : {{ company.description }}</li>
+        <li>Téléphone : {{ company.phone || 'Non renseigné' }}</li>
+        <li>WhatsApp : {{ company.whatsapp || 'Non renseigné' }}</li>
+        <li>Localisation : {{ company.location || 'Non renseigné' }}</li>
+      </ul>
+    </nz-tab>
+
+    <!-- Onglet 2 : Liens Professionnels -->
+    <nz-tab nzTitle="Liens">
+      <ul *ngIf="company">
+        <li><a [href]="company.link_fb" target="_blank">Facebook</a></li>
+        <li><a [href]="company.link_tiktok" target="_blank">TikTok</a></li>
+        <li><a [href]="company.link_insta" target="_blank">Instagram</a></li>
+        <li><a [href]="company.link_pinterest" target="_blank">Pinterest</a></li>
+        <li><a [href]="company.link_twit" target="_blank">Twitter</a></li>
+        <li><a [href]="company.link_youtube" target="_blank">YouTube</a></li>
+        <li><a [href]="company.link" target="_blank">Site Web</a></li>
+      </ul>
+    </nz-tab>
+
+    <!-- Onglet 3 : Couleurs -->
+    <nz-tab nzTitle="Couleurs">
+      <ul *ngIf="company">
+        <li>Couleur principale : <span [style.color]="company.primary_color">{{ company.primary_color }}</span></li>
+        <li>Couleur secondaire : <span [style.color]="company.secondary_color">{{ company.secondary_color || 'Non renseigné' }}</span></li>
+        <li>Couleur tertiaire : <span [style.color]="company.tertiary_color">{{ company.tertiary_color || 'Non renseigné' }}</span></li>
+      </ul>
+    </nz-tab>
+
+    <!-- Onglet 4 : Statut -->
+    <nz-tab nzTitle="Statut">
+      <ul *ngIf="company">
+        <li>Statut : {{ company.isActive ? 'Actif' : 'Inactif' }}</li>
+        <li>Supprimé : {{ company.deleted ? 'Oui' : 'Non' }}</li>
+      </ul>
+    </nz-tab>
+  </nz-tabset>
+</div>

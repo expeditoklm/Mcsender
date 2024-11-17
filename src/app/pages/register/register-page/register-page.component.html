@@ -1,0 +1,161 @@
+<div class="auth-wrapper">
+    <div class="auth-container">
+      <!-- Section gauche avec l'image et la marque -->
+      <div class="brand-section">
+        <div class="brand-content">
+          <div class="logo-container">
+            <img src="assets/icon/icon.png" alt="Logo de messages multicanaux" class="brand-logo" />
+          </div>
+          <div class="brand-text">
+            <h1>Créez votre compte</h1>
+            <p class="brand-description">Rejoignez-nous pour accéder à tous nos services</p>
+          </div>
+          <div class="decoration-elements">
+            <div class="circle-1"></div>
+            <div class="circle-2"></div>
+            <div class="circle-3"></div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Section droite avec le formulaire -->
+      <div class="form-section">
+        <div class="form-container">
+          <div class="form-header">
+            <h2>Inscription</h2>
+            <p class="form-subtitle">Remplissez les informations ci-dessous</p>
+          </div>
+  
+          <form nz-form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+            <!-- Nom complet -->
+            <div class="form-group">
+              <label class="form-label">Nom complet</label>
+              <nz-form-control [nzErrorTip]="nameErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="userIcon" class="custom-input-group">
+                  <input 
+                    nz-input
+                    formControlName="fullName"
+                    placeholder="Entrez votre nom complet"
+                    type="text"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['fullName'].invalid && registerForm.controls['fullName'].touched">
+                  <div class="error-message">Le nom est requis</div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <nz-form-control [nzErrorTip]="emailErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="emailIcon" class="custom-input-group">
+                  <input 
+                    nz-input
+                    formControlName="email"
+                    placeholder="Entrez votre email"
+                    type="email"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['email'].invalid && registerForm.controls['email'].touched">
+                  <div class="error-message" *ngIf="registerForm.controls['email'].hasError('required')">
+                    L'email est requis
+                  </div>
+                  <div class="error-message" *ngIf="registerForm.controls['email'].hasError('email')">
+                    Format d'email invalide
+                  </div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Téléphone -->
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <nz-form-control [nzErrorTip]="phoneErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="phoneIcon" class="custom-input-group">
+                  <input 
+                    nz-input
+                    formControlName="phone"
+                    placeholder="Entrez votre numéro de téléphone"
+                    type="tel"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['phone'].invalid && registerForm.controls['phone'].touched">
+                  <div class="error-message">Numéro de téléphone invalide</div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Mot de passe -->
+            <div class="form-group">
+              <label class="form-label">Mot de passe</label>
+              <nz-form-control [nzErrorTip]="passwordErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="passwordIcon" class="custom-input-group">
+                  <input
+                    nz-input
+                    formControlName="password"
+                    placeholder="Créez votre mot de passe"
+                    type="password"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['password'].invalid && registerForm.controls['password'].touched">
+                  <div class="error-message" *ngIf="registerForm.controls['password'].hasError('required')">
+                    Le mot de passe est requis
+                  </div>
+                  <div class="error-message" *ngIf="registerForm.controls['password'].hasError('minlength')">
+                    Minimum 6 caractères requis
+                  </div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Confirmation mot de passe -->
+            <div class="form-group">
+              <label class="form-label">Confirmer le mot de passe</label>
+              <nz-form-control [nzErrorTip]="confirmPasswordErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="passwordIcon" class="custom-input-group">
+                  <input
+                    nz-input
+                    formControlName="confirmPassword"
+                    placeholder="Confirmez votre mot de passe"
+                    type="password"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['confirmPassword'].invalid && registerForm.controls['confirmPassword'].touched">
+                  <div class="error-message" *ngIf="registerForm.controls['confirmPassword'].hasError('required')">
+                    La confirmation du mot de passe est requise
+                  </div>
+                  <div class="error-message" *ngIf="registerForm.controls['confirmPassword'].hasError('mismatch')">
+                    Les mots de passe ne correspondent pas
+                  </div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Actions -->
+            <div class="form-actions">
+              <button
+                nz-button
+                nzType="primary"
+                type="submit"
+                [disabled]="registerForm.invalid"
+                class="submit-button"
+              >
+                <span>S'inscrire</span>
+                <i nz-icon nzType="arrow-right" nzTheme="outline"></i>
+              </button>
+            </div>
+          </form>
+  
+          <div class="form-footer">
+            <p>Vous avez déjà un compte ? <a [routerLink]="'/login'" class="signin-link">Connectez-vous</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

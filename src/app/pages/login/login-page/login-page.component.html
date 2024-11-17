@@ -1,0 +1,103 @@
+<!-- Container principal avec effet de fond -->
+<div class="auth-wrapper">
+    <div class="auth-container">
+      <!-- Section gauche avec l'image et la marque -->
+      <div class="brand-section">
+        <div class="brand-content">
+          <div class="logo-container">
+            <img src="assets/icon/icon.png" alt="Logo de messages multicanaux" class="brand-logo" />
+          </div>
+          <div class="brand-text">
+            <h1>Bienvenue</h1>
+            <p class="brand-description">Connectez-vous pour accéder à votre espace personnel</p>
+          </div>
+          <div class="decoration-elements">
+            <div class="circle-1"></div>
+            <div class="circle-2"></div>
+            <div class="circle-3"></div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Section droite avec le formulaire -->
+      <div class="form-section">
+        <div class="form-container">
+          <div class="form-header">
+            <h2>Connexion</h2>
+            <p class="form-subtitle">Heureux de vous revoir !</p>
+          </div>
+  
+          <form nz-form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+            <!-- Groupe Email -->
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <nz-form-control [nzErrorTip]="emailErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="emailIcon" class="custom-input-group">
+                  <input 
+                    nz-input
+                    formControlName="email"
+                    placeholder="Entrez votre email"
+                    type="email"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="loginForm.controls['email'].invalid && loginForm.controls['email'].touched">
+                  <div class="error-message" *ngIf="loginForm.controls['email'].hasError('required')">
+                    L'email est requis
+                  </div>
+                  <div class="error-message" *ngIf="loginForm.controls['email'].hasError('email')">
+                    Format d'email invalide
+                  </div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Groupe Mot de passe -->
+            <div class="form-group">
+              <div class="password-header">
+                <label class="form-label">Mot de passe</label>
+                <a [routerLink]="'/forgot-password'" class="forgot-password">Mot de passe oublié ?</a>
+              </div>
+              <nz-form-control [nzErrorTip]="passwordErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="passwordIcon" class="custom-input-group">
+                  <input
+                    nz-input
+                    formControlName="password"
+                    placeholder="Entrez votre mot de passe"
+                    type="password"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="loginForm.controls['password'].invalid && loginForm.controls['password'].touched">
+                  <div class="error-message" *ngIf="loginForm.controls['password'].hasError('required')">
+                    Le mot de passe est requis
+                  </div>
+                  <div class="error-message" *ngIf="loginForm.controls['password'].hasError('minlength')">
+                    Minimum 6 caractères requis
+                  </div>
+                </div>
+              </nz-form-control>
+            </div>
+  
+            <!-- Actions -->
+            <div class="form-actions">
+              <button
+                nz-button
+                nzType="primary"
+                type="submit"
+                [disabled]="loginForm.invalid"
+                class="submit-button"
+              >
+                <span>Se connecter</span>
+                <i nz-icon nzType="arrow-right" nzTheme="outline"></i>
+              </button>
+            </div>
+          </form>
+  
+          <div class="form-footer">
+            <p>Vous n'avez pas de compte ? <a [routerLink]="'/register'" class="signup-link">Inscrivez-vous</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

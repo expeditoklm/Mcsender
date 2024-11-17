@@ -1,0 +1,12 @@
+<div class="custom-modal" *ngIf="isVisible">
+    <div class="custom-modal-overlay" (click)="closeModal()"></div>
+    <div class="custom-modal-content">
+      <h3 class="modal-title">{{ modalTitle }}</h3>
+      <p class="modal-message">{{ modalMessage }}</p>
+      <div class="modal-buttons">
+        <button nz-button nzType="primary" class="confirm-btn" (click)="handleDelete()">{{ confirmText }}</button>
+        <button nz-button nzType="default" class="cancel-btn" (click)="closeModal()">{{ cancelText }}</button>
+      </div>
+    </div>
+  </div>
+    

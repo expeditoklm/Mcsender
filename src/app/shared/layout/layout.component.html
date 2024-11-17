@@ -1,0 +1,121 @@
+<nz-layout>
+  <nz-sider nzCollapsible nzWidth="200px">
+    <div class="lCogo">
+      <img src="assets/icon/icon.png" alt="Logo de messages multicanaux"
+        style="height: 50px;width:50px;margin-left: 17px;margin-top: 15px;" />
+    </div>
+
+    <ul nz-menu nzTheme="dark" nzMode="inline">
+      <!-- Tableau de bord -->
+      <li nz-menu-item [routerLink]="'/dashboard'">
+        <i nz-icon nzType="bank" nzTheme="outline"></i>
+        <span>Tableau de bord</span>
+      </li>
+
+      <!-- Utilisateurs -->
+      <li nz-submenu nzTitle="Utilisateurs" nzIcon="user">
+        <ul>
+          <li nz-menu-item nzIcon="unordered-list" [routerLink]="'/dashboard/users'">
+            Liste des utilisateurs
+          </li>
+          <li nz-menu-item nzIcon="user-delete" [routerLink]="'/dashboard/users-not-in-company'">
+            Utilisateurs sans compagnies
+          </li>
+        </ul>
+      </li>
+
+      <!-- Compagnies -->
+      <li nz-submenu nzTitle="Compagnies" nzIcon="team">
+        <ul>
+          <li nz-menu-item nzIcon="bank" [routerLink]="'/dashboard/companies'">
+            Liste des compagnies
+          </li>
+          <li nz-menu-item nzIcon="warning" [routerLink]="'/dashboard/companies-not-confirm'">
+            Compagnies non confirmées
+          </li>
+        </ul>
+      </li>
+
+      <!-- Campagnes -->
+      <li nz-menu-item [routerLink]="'/dashboard/compaigns'">
+        <i nz-icon nzType="rocket" nzTheme="outline"></i>
+        <span>Campagnes</span>
+      </li>
+
+      <!-- Audiences -->
+      <li nz-menu-item [routerLink]="'/dashboard/audiences'">
+        <i nz-icon nzType="usergroup-add" nzTheme="outline"></i>
+        <span>Audiences</span>
+      </li>
+
+      <li nz-menu-item [routerLink]="'/dashboard/contacts'">
+        <i nz-icon nzType="usergroup-add" nzTheme="outline"></i>
+        <span>Contacts</span>
+      </li>
+
+      <!-- Canaux -->
+      <li nz-menu-item [routerLink]="'/dashboard/channels'">
+        <i nz-icon nzType="share-alt" nzTheme="outline"></i>
+        <span>Canaux</span>
+      </li>
+
+      <!-- Types de Templates -->
+      <li nz-menu-item [routerLink]="'/dashboard/template-types'">
+        <i nz-icon nzType="layout" nzTheme="outline"></i>
+        <span>Types Templates</span>
+      </li>
+
+      <!-- Templates -->
+      <li nz-menu-item [routerLink]="'/dashboard/templates'">
+        <i nz-icon nzType="appstore-add" nzTheme="outline"></i>
+        <span>Templates</span>
+      </li>
+
+      <!-- Messages -->
+      <li nz-menu-item [routerLink]="'/dashboard/messages'">
+        <i nz-icon nzType="message" nzTheme="outline"></i>
+        <span>Messages</span>
+      </li>
+    </ul>
+  </nz-sider>
+
+  <nz-layout>
+    <header class="navbar">
+      <div class="navbar-container">
+        <!-- Informations utilisateur -->
+        <div class="user-info">
+          <div class="profile-container" (click)="toggleDropdown($event)">
+            <a class="profile-link">
+              <img src="assets/images/faces/face1.jpg" alt="Profil" class="profile-pic" />
+              <span class="user-name">John Doe</span>
+              <i class="icon-down"></i>
+            </a>
+    
+            <!-- Menu déroulant -->
+            <ul *ngIf="dropdownVisible" class="profile-dropdown">
+              <li class="dropdown-item" [routerLink]="'/profile'">Voir le profil</li>
+              <li class="dropdown-item" (click)="logout()">Déconnexion</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+    
+    
+    
+
+    <nz-content>
+      <nz-breadcrumb>
+        <nz-breadcrumb-item>
+          <a routerLink="/dashboard">Accueil</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>{{ title }}</nz-breadcrumb-item>
+      </nz-breadcrumb>
+      <div class="inner-content">
+        <router-outlet></router-outlet>
+      </div>
+    </nz-content>
+
+    <nz-footer>Ant Design ©2020 Implementé par Angular</nz-footer>
+  </nz-layout>
+</nz-layout>

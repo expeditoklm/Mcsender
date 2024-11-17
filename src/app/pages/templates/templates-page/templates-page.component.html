@@ -1,0 +1,79 @@
+<div class="dashboard-actions">
+    <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un utilisateur</button>
+  
+    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" />
+    <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail" />
+    <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" />
+  </div>
+  
+  
+  
+  
+  
+  <nz-table
+    #basicTable
+    [nzData]="filteredUsers"
+    [nzScroll]="{ x: '100%', y: '500px' }"
+    [nzBordered]="true"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    [nzTotal]="total"
+    [nzShowPagination]="false"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  >
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Email</th>
+        <th>Rôle</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  
+    <tbody>
+      <ng-container *ngFor="let user of filteredUsers">
+        <tr>
+          <td>{{ user.name }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.role }}</td>
+         
+          <td class="action-icons">
+         
+            <!-- Icône pour "Voir en détail" -->
+            <button nz-button nzType="link" (click)="viewDetailsUser(user)">
+              <i nz-icon nzType="eye" nzTheme="outline"></i>
+            </button>
+  
+            <!-- Icône pour "Modifier" -->
+            <button nz-button nzType="link" (click)="editUser(user)">
+              <i nz-icon nzType="edit" nzTheme="outline"></i>
+            </button>
+            
+            <!-- Icône pour "Supprimer" -->
+            <button nz-button nzType="link" nzDanger (click)="deleteUser(user)">
+              <i nz-icon nzType="delete" nzTheme="outline"></i>
+            </button>
+          </td>
+        </tr>
+        
+      </ng-container>
+    </tbody>
+  </nz-table>
+  
+  
+  
+  
+  <!-- Ajoutez un conteneur pour espacer la pagination -->
+  <div class="pagination-container">
+    <nz-pagination
+      [(nzPageIndex)]="pageIndex"
+      [nzTotal]="total"
+      [nzPageSize]="pageSize"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+    ></nz-pagination>
+  </div>
+  

@@ -1,0 +1,79 @@
+<div class="user-create-form-container">
+  <div class="custom-modal-overlay"  (click)="cancel()"></div>
+  <div class="custom-modal-content" >
+    <h3 class="form-title">Créer un utilisateur</h3>
+    <form nz-form [nzLayout]="'vertical'" class="user-create-form">
+      <!-- Champ Nom -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'name'">Nom</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="name"
+            [(ngModel)]="formData.name"
+            name="name"
+            placeholder="Entrez le nom"
+            required
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'username'">Prénom</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="username"
+            [(ngModel)]="formData.username"
+            name="username"
+            placeholder="Entrez le prénom"
+            required
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+      <!-- Champ Email -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'email'">Email</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="email"
+            [(ngModel)]="formData.email"
+            name="email"
+            type="email"
+            placeholder="Entrez l'email"
+            required
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+      <!-- Sélecteur de rôle -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'role'">Rôle</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <nz-select
+            id="role"
+            [(ngModel)]="formData.role"
+            name="role"
+            nzPlaceHolder="Choisir un rôle"
+            required
+          >
+            <nz-option nzValue="admin" nzLabel="Administrateur"></nz-option>
+            <nz-option nzValue="user" nzLabel="Utilisateur"></nz-option>
+            <nz-option nzValue="guest" nzLabel="Invité"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- Boutons d'action -->
+      <div class="form-buttons">
+        <button nz-button nzType="primary" nzBlock (click)="submitForm()">Enregistrer</button>
+        <button nz-button nzType="default" nzBlock (click)="cancel()">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>

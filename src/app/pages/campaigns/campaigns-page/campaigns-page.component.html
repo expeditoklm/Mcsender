@@ -1,0 +1,111 @@
+<div class="dashboard-actions">
+    <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter une campagne</button>
+  
+    <input nz-input placeholder="Recherche par libellé" [(ngModel)]="searchName" />
+    <input nz-input placeholder="Recherche par entreprise" [(ngModel)]="searchEmail" />
+    <input nz-input 
+    id="role"
+    list="role-option"
+    name="role"
+    placeholder="Recherche par status" [(ngModel)]="searchRole" />
+
+    <datalist id="role-option">
+      <option value="Employee"></option>
+      <option value="Moderator"></option>
+    </datalist>
+
+    <!-- Sélecteur de rôle -->
+   
+  </div>
+  
+ 
+  
+  
+  
+  
+  <nz-table
+    #basicTable
+    [nzData]="filteredUsers"
+    [nzScroll]="{ x: '100%', y: '500px' }"
+    [nzBordered]="true"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    [nzTotal]="total"
+    [nzShowPagination]="false"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  >
+    <thead>
+      <tr>
+        <th>Libellé</th>
+        <th>Date de début</th>
+        <th>Date de fin</th>
+        <th>Entreprise</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  
+    <tbody>
+      <ng-container *ngFor="let user of filteredUsers">
+        <tr>
+          <td>{{ user.name }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span *ngIf="user.role === 'CANCELLED'">
+              <i nz-icon nzType="close-circle" nzTheme="outline" style="color: red; padding-right: 5px;"></i>
+              <span>Annulé</span>
+            </span>
+          
+            <span *ngIf="user.role === 'COMPLETED'">
+              <i nz-icon nzType="check-circle" nzTheme="outline" style="color: green; padding-right: 5px;"></i>
+              <span>Complété</span>
+            </span>
+          
+            <span *ngIf="user.role === 'PENDING'">
+              <i nz-icon nzType="clock-circle" nzTheme="outline" style="color: orange; padding-right: 5px;"></i>
+              <span>En attente</span>
+            </span>
+          </td>
+          
+          
+         
+          <td class="action-icons">
+         
+            <!-- Icône pour "Voir en détail" -->
+            <button nz-button nzType="link" (click)="viewDetailsUser(user)">
+              <i nz-icon nzType="eye" nzTheme="outline"></i>
+            </button>
+  
+            <!-- Icône pour "Modifier" -->
+            <button nz-button nzType="link" (click)="editUser(user)">
+              <i nz-icon nzType="edit" nzTheme="outline"></i>
+            </button>
+            
+            <!-- Icône pour "Supprimer" -->
+            <button nz-button nzType="link" nzDanger (click)="deleteUser(user)">
+              <i nz-icon nzType="delete" nzTheme="outline"></i>
+            </button>
+          </td>
+        </tr>
+        
+      </ng-container>
+    </tbody>
+  </nz-table>
+  
+  
+  
+  
+  <!-- Ajoutez un conteneur pour espacer la pagination -->
+  <div class="pagination-container">
+    <nz-pagination
+      [(nzPageIndex)]="pageIndex"
+      [nzTotal]="total"
+      [nzPageSize]="pageSize"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+    ></nz-pagination>
+  </div>
+  

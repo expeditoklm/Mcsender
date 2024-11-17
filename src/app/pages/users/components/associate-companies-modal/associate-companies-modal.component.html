@@ -1,0 +1,53 @@
+<div class="modal-header">
+  <h3 class="modal-title">Associer des entreprises à {{ user?.name }}</h3>
+</div>
+
+<div class="modal-body associate-modal-content">
+  <!-- Barre de recherche -->
+  <nz-input-group [nzSuffix]="suffixTemplate" class="search-bar">
+    <input
+      type="text"
+      nz-input
+      placeholder="Rechercher des entreprises"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="searchCompanies()"
+    />
+  </nz-input-group>
+  <ng-template #suffixTemplate>
+    <i nz-icon nzType="search" nzTheme="outline"></i>
+  </ng-template>
+
+  <!-- Liste des entreprises avec cases à cocher -->
+  <nz-list class="company-list" [nzDataSource]="filteredCompanies" nzBordered nzItemLayout="horizontal">
+    <ng-container *ngFor="let company of filteredCompanies">
+      <nz-list-item>
+        <label class="company-item">
+          <input
+            type="checkbox"
+            [checked]="isSelected(company)"
+            (change)="toggleCompanySelection(company)"
+          />
+          <span class="company-name">{{ company?.name }}</span>
+        </label>
+      </nz-list-item>
+    </ng-container>
+  </nz-list>
+
+  <!-- Liste des entreprises sélectionnées -->
+  <div *ngIf="selectedCompanies.length > 0" class="selected-companies">
+    <h4>Entreprises sélectionnées :</h4>
+    <ul>
+      <li *ngFor="let company of selectedCompanies" class="selected-company-item">
+        {{ company?.name }}
+        <button nz-button nzType="link" (click)="removeCompany(company)" class="remove-btn">
+          <i nz-icon nzType="close" nzTheme="outline"></i> Supprimer
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button nz-button nzType="primary" (click)="submit()">Soumettre</button>
+  <button nz-button nzType="default" (click)="cancel()">Annuler</button>
+</div>

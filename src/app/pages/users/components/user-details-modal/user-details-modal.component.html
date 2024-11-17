@@ -1,0 +1,29 @@
+<div>
+    <nz-tabset>
+      <!-- Onglet 1 -->
+      <nz-tab nzTitle="Informations Générales">
+        <ul *ngIf="user">
+          <li>Nom : {{ user.name }}</li>
+          <li>Prénom : {{ user.username }}</li>
+          <li>Email : {{ user.email }}</li>
+          <li>Rôle : {{ user.role }}</li>
+        </ul>
+      </nz-tab>
+  
+      <!-- Onglet 2 -->
+      <nz-tab nzTitle="Informations Professionnelles">
+        <p><strong>Les entreprises de l'utlisateur {{ user.name }}</strong></p>
+        <ol *ngIf="user">
+          <span>
+            <!-- Disposer les li sur lhorizontal -->
+            <li><p>oklm bro</p></li>
+            <li><p>oklm bro</p></li>
+          </span>
+          
+        </ol>
+      </nz-tab>
+  
+     
+    </nz-tabset>
+  </div>
+  

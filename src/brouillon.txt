@@ -1,0 +1,49 @@
+faire le model a temps de toutes les pages
+
+
+
+reecrit le code de ce layout (code) en lui complettant au niveau de la navbar c-a-d  la bar du haut les informarion de la personne
+connecter  et au survole du profile qu'un liste deroulante s'affiche et propose des information comme voir le profil et meme
+le bouton deonnection
+
+revoir mon problemme au niveau des api par rapport a nodemailer (code erreur)
+revoir mon schema prisma au niveau  de audience (il ny a pas de cle secondaire)
+
+prendre licone de lapk transformer en format jpeg et enlever son fond
+
+generer un composant toast (avec la command) pour afficher les messages derreur et de succes 
+de sorte que je puisse lutiliser dans plusieur autre composant sans repeter son code dans le composant parent
+
+reecrit ce composant enfant  : (code)
+de sorte que je puisse lutiliser dans plusieur autre composant sans repeter son code dans le composant parent
+
+composant create-user 
+composant create-company
+composant view-details
+
+prevoir un filtre en haut de liste et des icones dans la colonne action pour :
+
+campaigns (status) + icone
+messages (status) + icone
+user (role) + icone ; 
+
+
+
+
+
+
+une icone de plus qui ouvre un modal pour associer plusieur entreprise a 
+l'utilisateur : on pourra rechercher dans la barre de recherche et cocher et lelement cocher sera
+suspendu la et on aura encore la possiblité de faire encore une autre recherche et 
+cocher une deuxieme fois et ainsi de suite jusqua avoir le total des entrepise souhaiter et soumetre ;
+
+une icone pour signaler que luilisateur est active ou desactive (optionnel:  pas d'api pour gerer ca)
+user-company (isMember) + icone
+
+une icone de plus pour action sur la page audiences pour rediriger vers la pages contact et 
+lister uniquement les contacts de laudience selectionner : preremplir les filtre audience,campagnes et entreprise 
+
+
+
+ 
+           #4f46e5 #6366f1

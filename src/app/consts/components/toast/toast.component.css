@@ -1,0 +1,47 @@
+.toast {
+    position: fixed;
+    top: 20px; /* Affiche dans le coin supérieur de l'écran */
+    right: 20px;
+    padding: 15px 20px;
+    color: white;
+    border-radius: 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Boîte d'ombre */
+    opacity: 0;
+    animation: fadeInOut 3.6s forwards;
+}
+
+/* Animation pour apparaitre et disparaitre */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(100%); }
+    10%, 90% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(100%); }
+}
+
+.toast-success {
+    background-color: rgb(76, 175, 80); /* Vert adouci */
+}
+
+.toast-error {
+    background-color: rgb(229, 57, 53); /* Rouge adouci */
+}
+
+/* Icône */
+.toast-icon {
+    margin-right: 10px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2); /* Cercle semi-transparent */
+}
+
+.toast-message {
+    flex: 1;
+    line-height: 1.2;
+}

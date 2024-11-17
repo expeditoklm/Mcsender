@@ -1,0 +1,102 @@
+<div class="dashboard-actions">
+  <button nz-button nzType="primary" (click)="openModal()">Ajouter</button>
+  <!-- <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un utilisateur</button> -->
+
+  <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" />
+  <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail" />
+  <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" />
+</div>
+
+
+
+
+
+<nz-table
+  #basicTable
+  [nzData]="filteredUsers"
+  [nzScroll]="{ x: '100%', y: '500px' }"
+  [nzBordered]="true"
+  [nzPageIndex]="pageIndex"
+  [nzPageSize]="pageSize"
+  [nzTotal]="total"
+  [nzShowPagination]="false"
+  (nzPageIndexChange)="onPageIndexChange($event)"
+  (nzPageSizeChange)="onPageSizeChange($event)"
+>
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Email</th>
+      <th>Rôle</th>
+      <th>Téléphone</th>
+      <th>Adresse</th>
+      <th>Compagnie</th>
+      <th>Date de création</th>
+      <th>Statut</th>
+      <th colspan="2">Action</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <ng-container *ngFor="let user of filteredUsers">
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role }}</td>
+        <td>{{ user.phone }}</td>
+        <td>{{ user.address }}</td>
+        <td>{{ user.company }}</td>
+        <td>{{ user.createdAt }}</td>
+        <td>{{ user.status }}</td>
+        <td>
+          <button nz-button nzType="link" (click)="toggleDetails(user)">
+            <i nz-icon [nzType]="user.detailsVisible ? 'up' : 'down'" nzTheme="outline"></i>
+          </button>
+        </td>
+        <td class="action-icons">
+          <!-- Icône pour "Voir en détail" -->
+          <button nz-button nzType="link" (click)="viewDetailsUser(user)">
+            <i nz-icon nzType="eye" nzTheme="outline"></i>
+          </button>
+
+          <!-- Icône pour "Modifier" -->
+          <button nz-button nzType="link" (click)="editUser(user)">
+            <i nz-icon nzType="edit" nzTheme="outline"></i>
+          </button>
+          
+          <!-- Icône pour "Supprimer" -->
+          <button nz-button nzType="link" nzDanger (click)="deleteUser(user)">
+            <i nz-icon nzType="delete" nzTheme="outline"></i>
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="user.detailsVisible">
+        <td colspan="10" class="user-details">
+          <p><strong>ID:</strong> {{ user.id }}</p>
+          <p><strong>Nom:</strong> {{ user.name }}</p>
+          <p><strong>Email:</strong> {{ user.email }}</p>
+          <p><strong>Rôle:</strong> {{ user.role }}</p>
+          <p><strong>Téléphone:</strong> {{ user.phone }}</p>
+          <p><strong>Adresse:</strong> {{ user.address }}</p>
+          <p><strong>Compagnie:</strong> {{ user.company }}</p>
+          <p><strong>Date de création:</strong> {{ user.createdAt }}</p>
+          <p><strong>Statut:</strong> {{ user.status }}</p>
+        </td>
+      </tr>
+    </ng-container>
+  </tbody>
+</nz-table>
+
+
+
+
+<!-- Ajoutez un conteneur pour espacer la pagination -->
+<div class="pagination-container">
+  <nz-pagination
+    [(nzPageIndex)]="pageIndex"
+    [nzTotal]="total"
+    [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  ></nz-pagination>
+</div>

@@ -1,0 +1,43 @@
+<div class="dashboard-content">
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzSpan]="8">
+        <nz-card>
+          <nz-statistic [nzValue]="totalUsers" [nzTitle]="'Total Users'" [nzPrefix]="userIcon"></nz-statistic>
+        </nz-card>
+      </div>
+  
+      <div nz-col [nzSpan]="8">
+        <nz-card>
+          <nz-statistic [nzValue]="activeSessions" [nzTitle]="'Active Sessions'" [nzPrefix]="sessionIcon"></nz-statistic>
+        </nz-card>
+      </div>
+  
+      <div nz-col [nzSpan]="8">
+        <nz-card>
+          <nz-statistic [nzValue]="totalSales" [nzTitle]="'Total Sales'" [nzPrefix]="salesIcon"></nz-statistic>
+        </nz-card>
+      </div>
+    </div>
+  
+    <div nz-row [nzGutter]="16" style="margin-top: 16px;">
+      <div nz-col [nzSpan]="8">
+        <nz-card>
+          <nz-statistic [nzValue]="newOrders" [nzTitle]="'New Orders'" [nzPrefix]="orderIcon"></nz-statistic>
+        </nz-card>
+      </div>
+  
+      <div nz-col [nzSpan]="8">
+        <nz-card>
+          <nz-statistic [nzValue]="profit" [nzTitle]="'Profit'" [nzPrefix]="profitIcon"></nz-statistic>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Icons defined here for each stat type -->
+  <ng-template #userIcon><i nz-icon nzType="user" nzTheme="outline"></i></ng-template>
+  <ng-template #sessionIcon><i nz-icon nzType="desktop" nzTheme="outline"></i></ng-template>
+  <ng-template #salesIcon><i nz-icon nzType="shopping-cart" nzTheme="outline"></i></ng-template>
+  <ng-template #orderIcon><i nz-icon nzType="file-done" nzTheme="outline"></i></ng-template>
+  <ng-template #profitIcon><i nz-icon nzType="dollar" nzTheme="outline"></i></ng-template>
+  

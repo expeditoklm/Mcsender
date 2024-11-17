@@ -1,0 +1,35 @@
+.dashboard-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .user-details {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #e8e8e8;
+  }
+  
+  nz-table {
+    width: 100%;
+    overflow: auto;
+  }
+  
+
+ng-star-inserted {
+    display: block !important;
+  }
+
+  .pagination-container {
+    margin-top: 20px; /* Espace au-dessus de la pagination */
+    text-align: center; /* Centrer la pagination */
+  }
+
+  .action-icons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding-bottom: 50px;
+  }
+  
+  

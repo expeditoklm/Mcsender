@@ -1,0 +1,241 @@
+/* Styles pour le formulaire d'inscription */
+.auth-wrapper {
+    min-height: 100vh;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  
+  .auth-container {
+    display: flex;
+    width: 100%;
+    max-width: 1280px;
+    min-height: 600px;
+    background: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .brand-section {
+    flex: 1;
+    background: linear-gradient(135deg, #06254e, #06254e);
+    position: relative;
+    overflow: hidden;
+    padding: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .brand-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+    text-align: center;
+  }
+  
+  .logo-container {
+    margin-bottom: 2rem;
+  }
+  
+  .brand-logo {
+    width: 120px;
+    height: auto;
+    filter: brightness(0) invert(1);
+  }
+  
+  .brand-text h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .brand-description {
+    font-size: 1.125rem;
+    opacity: 0.9;
+  }
+  
+  .decoration-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+  
+  .circle-1, .circle-2, .circle-3 {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .circle-1 {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -100px;
+  }
+  
+  .circle-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 50px;
+    left: -50px;
+  }
+  
+  .circle-3 {
+    width: 150px;
+    height: 150px;
+    bottom: -50px;
+    right: 50px;
+  }
+  
+  .form-section {
+    flex: 1;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .form-container {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .form-header {
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+  
+  .form-header h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-subtitle {
+    color: #6b7280;
+  }
+  
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #111827;
+  }
+  
+  .custom-input-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+    background: white;
+  }
+  
+  .custom-input-group:focus-within {
+    border-color: #06254e;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+  }
+  
+  .custom-input {
+    padding: 0.75rem 1rem;
+    width: 100%;
+    font-size: 1rem;
+    border: none;
+    background: transparent;
+    outline: none;
+  }
+  
+  .error-container {
+    margin-top: 0.5rem;
+  }
+  
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .submit-button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: #697B94;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+    
+  /* Footer du formulaire */
+  .form-footer {
+    margin-top: 2rem;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  .signin-link {
+    color: #06254e;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .signin-link:hover {
+    color: #4338ca;
+  }
+  
+  /* Styles spécifiques pour ng-zorro */
+  nz-form-control {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  
+ 
+
+  
+  /* Media Queries */
+  @media (max-width: 1024px) {
+    .auth-container {
+      max-width: 900px;
+    }
+    
+    .brand-section {
+      padding: 2.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .auth-container {
+      flex-direction: column;
+    }
+  
+    .brand-section {
+      padding: 2rem;
+      min-height: 300px;
+    }
+  
+    .form-section {
+      padding: 2rem;
+    }
+  
+    .brand-text h1 {
+      font-size: 2rem;
+    }
+  }

@@ -1,0 +1,91 @@
+/* Style général */
+.associate-modal-content {
+  padding: 15px;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Entête du modal */
+.modal-header {
+  background-color: #3b5998;
+  color: white;
+  padding: 15px;
+  text-align: center;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Barre de recherche */
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.search-bar input {
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Liste des entreprises */
+.company-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.company-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.company-name {
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+/* Entreprises sélectionnées */
+.selected-companies h4 {
+  margin-top: 20px;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.selected-company-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background-color: #e6f7ff;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+
+.remove-btn {
+  color: #ff4d4f;
+}
+
+/* Pied de page */
+.modal-footer {
+  text-align: right;
+  padding: 15px;
+  border-top: 1px solid #e8e8e8;
+}
+
+
+.company-item, .selected-company-item, .search-bar input {
+  transition: all 0.3s ease;
+}
+
+.company-item:hover, .selected-company-item:hover {
+  background-color: #f0f5ff;
+  cursor: pointer;
+}
+
+.search-bar input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
+}

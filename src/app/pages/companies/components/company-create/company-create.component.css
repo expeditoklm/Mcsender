@@ -1,0 +1,42 @@
+.step-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .nz-input-group {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  nz-form-explain {
+    color: #f5222d;
+    font-size: 12px;
+  }
+  
+  button:disabled {
+    opacity: 0.6;
+  }
+  
+
+  /* user-form.component.css */
+.form-container {
+    padding: 20px;
+  }
+  
+  .form-row {       
+    margin-bottom: 7px;
+    margin-top: 10px;
+  }
+  
+  .step-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .ant-form-explain {
+    margin-top: 8px;
+    color: red;
+  }
+  

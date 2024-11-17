@@ -1,0 +1,31 @@
+<form [formGroup]="companpyForm" (ngSubmit)="onSubmit()" class="form-container">
+    <nz-steps [nzCurrent]="currentStep" [nzSize]="'small'">
+      <nz-step *ngFor="let step of stepsConfig" [nzTitle]="step.title"></nz-step>
+    </nz-steps>
+  
+    <ng-container *ngFor="let step of stepsConfig; let i = index">
+      <div *ngIf="currentStep === i" [formGroup]="getFormGroup(i)">
+        <div nz-row nzGutter="16" *ngFor="let control of getFormControls(i)" class="form-row">
+          <div nz-col [nzSpan]="24">
+            <nz-input-group>
+              <input nz-input [formControlName]="control.name" [placeholder]="control.placeholder" />
+              <div class="ant-form-explain" *ngIf="getFormGroup(i).get(control.name)?.invalid && (getFormGroup(i).get(control.name)?.touched || getFormGroup(i).get(control.name)?.dirty)">
+                Ce champ est requis
+              </div>
+            </nz-input-group>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  
+    <div class="step-buttons">
+      <button nz-button type="button" (click)="prev()" [disabled]="currentStep === 0" nzType="default">
+        <i nz-icon nzType="left"></i> Précédent
+      </button>
+      <button nz-button type="button" (click)="next()" [disabled]="currentStep === stepsConfig.length - 1 || !isCurrentStepValid()" nzType="primary">
+        Suivant <i nz-icon nzType="right"></i>
+      </button>
+      <button nz-button type="submit" [disabled]="!companpyForm.valid" nzType="primary">Soumettre</button>
+    </div>
+  </form>
+  
