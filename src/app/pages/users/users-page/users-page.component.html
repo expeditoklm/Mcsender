@@ -1,9 +1,9 @@
 <div class="dashboard-actions">
     <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un utilisateur</button>
   
-    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" />
-    <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail" />
-    <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" />
+    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail"   (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" (ngModelChange)="onSearchChange()" />
   </div>
   
 

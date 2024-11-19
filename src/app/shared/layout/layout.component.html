@@ -87,7 +87,7 @@
           <div class="profile-container" (click)="toggleDropdown($event)">
             <a class="profile-link">
               <img src="assets/images/faces/face1.jpg" alt="Profil" class="profile-pic" />
-              <span class="user-name">John Doe</span>
+              <span class="user-name">{{ userName || 'Pseudo non disponible' }}</span>
               <i class="icon-down"></i>
             </a>
     

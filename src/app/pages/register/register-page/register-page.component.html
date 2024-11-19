@@ -29,22 +29,50 @@
           <form nz-form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
             <!-- Nom complet -->
             <div class="form-group">
-              <label class="form-label">Nom complet</label>
+              <label class="form-label">Nom </label>
               <nz-form-control [nzErrorTip]="nameErrorTip" class="custom-form-control">
                 <nz-input-group [nzPrefix]="userIcon" class="custom-input-group">
                   <input 
                     nz-input
-                    formControlName="fullName"
-                    placeholder="Entrez votre nom complet"
+                    formControlName="name"
+                    placeholder="Entrez votre nom "
                     type="text"
                     class="custom-input"
                   />
                 </nz-input-group>
-                <div class="error-container" *ngIf="registerForm.controls['fullName'].invalid && registerForm.controls['fullName'].touched">
+                <div class="error-container" *ngIf="registerForm.controls['name'].invalid && registerForm.controls['name'].touched">
                   <div class="error-message">Le nom est requis</div>
                 </div>
               </nz-form-control>
             </div>
+
+
+             <!-- Nom complet -->
+             <div class="form-group">
+              <label class="form-label">Prénom </label>
+              <nz-form-control [nzErrorTip]="nameErrorTip" class="custom-form-control">
+                <nz-input-group [nzPrefix]="userIcon" class="custom-input-group">
+                  <input 
+                    nz-input
+                    formControlName="username"
+                    placeholder="Entrez votre prénom "
+                    type="text"
+                    class="custom-input"
+                  />
+                </nz-input-group>
+                <div class="error-container" *ngIf="registerForm.controls['username'].invalid && registerForm.controls['username'].touched">
+                  <div class="error-message">Le prénom est requis</div>
+                </div>
+              </nz-form-control>
+            </div>
+
+            <!-- Définition de l'icône -->
+            <ng-template #userIcon>
+              <i nz-icon nzType="user"></i>
+            </ng-template>
+
+           
+  
   
             <!-- Email -->
             <div class="form-group">
@@ -69,6 +97,15 @@
                 </div>
               </nz-form-control>
             </div>
+
+
+             <!-- Définition de l'icône -->
+             <ng-template #emailIcon>
+              <i nz-icon nzType="mail"></i>
+            </ng-template><!-- Définition de l'icône -->
+           
+
+
   
             <!-- Téléphone -->
             <div class="form-group">
@@ -89,6 +126,13 @@
               </nz-form-control>
             </div>
   
+
+            <ng-template #phoneIcon>
+              <i nz-icon nzType="phone"></i>
+            </ng-template><!-- Définition de l'icône -->
+           
+
+
             <!-- Mot de passe -->
             <div class="form-group">
               <label class="form-label">Mot de passe</label>
@@ -112,6 +156,10 @@
                 </div>
               </nz-form-control>
             </div>
+
+            <ng-template #passwordIcon>
+              <i nz-icon nzType="lock"></i>
+            </ng-template>
   
             <!-- Confirmation mot de passe -->
             <div class="form-group">

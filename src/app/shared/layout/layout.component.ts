@@ -1,6 +1,6 @@
 
 
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule, RouterOutlet } from '@angular/router';
 
 // Import NG-Zorro modules
@@ -29,6 +29,7 @@ import {
 } from '@ant-design/icons-angular/icons';
 import { NzDropdownMenuComponent, NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { CommonModule } from '@angular/common';
+import { LoginService } from '../../pages/login/services/login.service';
 
 
 
@@ -45,21 +46,24 @@ import { CommonModule } from '@angular/common';
     NzIconModule,
     NzDropDownModule,
     RouterModule,
-    NzDropdownMenuComponent
   ],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css']
 })
 
 
-export class LayoutComponent {
+export class LayoutComponent implements OnInit  {
   title: string = '';
+  userEmail: string | null = null;
+  userName: string | null = null;
 
   constructor(
     private titleService: Title,
     private router: Router,
-    private activatedRoute: ActivatedRoute
-  ) {
+    private activatedRoute: ActivatedRoute,
+    private loginService: LoginService
+  ) 
+  {
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd
@@ -79,6 +83,20 @@ export class LayoutComponent {
   }
   
 
+  ngOnInit(): void {
+    this.getUserEmail();
+  }
+
+  getUserEmail(): void {
+    const token = sessionStorage.getItem("user_session_token");
+    this.userName = sessionStorage.getItem("user_session_username");
+    if (token) {
+      const decodedToken = this.loginService.decodeJWT(token);
+      const id = decodedToken?.id || null;
+      this.userEmail = decodedToken?.email || null;
+    }
+  }
+
   dropdownVisible: boolean = false;
 
   toggleDropdown(event: MouseEvent): void {
@@ -95,6 +113,10 @@ export class LayoutComponent {
   
 
   logout(): void {
+    sessionStorage.removeItem("user_session_token");
+    sessionStorage.removeItem("user_session_username");
+    this.router.navigate(['/login']);
+    location.reload();
     // Logique de déconnexion
     console.log('Déconnexion');
   }

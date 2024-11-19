@@ -1,64 +1,127 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Inject, Input, NgModule, OnInit, Output } from '@angular/core';
-import { FormsModule, NgForm, ReactiveFormsModule } from '@angular/forms';
+import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzInputGroupComponent } from 'ng-zorro-antd/input';
 import { NzListComponent, NzListItemComponent } from 'ng-zorro-antd/list';
 import { NZ_MODAL_DATA, NzModalComponent, NzModalRef } from 'ng-zorro-antd/modal';
+import { CompanyService } from '../../services/company.service';
+import { UserCompanyService } from '../../services/userCompany.service';
+import { NzTagComponent } from 'ng-zorro-antd/tag';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { Subscription } from 'rxjs';
+import { NzSpinComponent } from 'ng-zorro-antd/spin';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { ToastService } from '../../../../consts/components/toast/toast.service';
+
+export interface AssociateUserToCompaniesDto {
+  userId: number;
+  companyIds: number[];
+}
 
 @Component({
   selector: 'app-associate-companies-modal',
   standalone: true,
   imports: [
     CommonModule,
-    NzModalComponent,
     NzInputGroupComponent,
     NzListComponent,
     FormsModule,
     ReactiveFormsModule,
-    NzListItemComponent
-    
+    NzListItemComponent,
+    NzIconModule,
   ],
   templateUrl: './associate-companies-modal.component.html',
   styleUrl: './associate-companies-modal.component.css'
 })
-
-
-export class AssociateCompaniesModalComponent implements OnInit {
-  @Input() user: any; // Utilisation de l'Input decorator
+export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
+  @Input() user: any;
   @Output() companiesSelected = new EventEmitter<{ user: any, selectedCompanies: any[] }>();
 
   searchQuery: string = '';
   companies: any[] = [];
   filteredCompanies: any[] = [];
   selectedCompanies: any[] = [];
+  userCompanies: any[] = [];
+  isLoading: boolean = false;
+  isLoadingCompanies: boolean = false;
+  private companiesSubscription: Subscription | null = null;
+  private userCompaniesSubscription: Subscription | null = null;
 
-  constructor(private modal: NzModalRef,
+  constructor(
+    private modal: NzModalRef,
+    private companyService: CompanyService,
+    private userCompanyService: UserCompanyService,
+    private toastService: ToastService,
     @Inject(NZ_MODAL_DATA) public data: any
   ) {}
 
   ngOnInit(): void {
-    // Récupérer les données passées via 'nzData'
     this.user = this.data.user;
+    this.loadCompanies();
+  }
 
-    this.companies = [
-      { id: 1, name: 'Entreprise 1' },
-      { id: 2, name: 'Entreprise 2' },
-      { id: 3, name: 'Entreprise 3' },
-      { id: 4, name: 'Entreprise 4' },
-    ];
-    this.filteredCompanies = [...this.companies];
+  ngOnDestroy(): void {
+    this.companiesSubscription?.unsubscribe();
+    this.userCompaniesSubscription?.unsubscribe();
+  }
 
+  loadCompanies() {
+    this.isLoading = true;
+    this.companiesSubscription = this.companyService.getAllCompanies().subscribe({
+      next: (response: any) => {
+        this.companies = response.companies || [];
+        this.filteredCompanies = [...this.companies];
+        this.toastService.showSuccess('Liste des entreprises chargée avec succès.');
+        this.loadUserCompanies();
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des entreprises', error);
+        this.toastService.showError('Impossible de charger les entreprises.');
+        this.companies = [];
+        this.filteredCompanies = [];
+        this.isLoading = false;
+      }
+    });
+  }
 
+  loadUserCompanies() {
+    this.isLoadingCompanies = true;
+    this.userCompaniesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
+      .subscribe({
+        next: (companies) => {
+          this.userCompanies = companies;
+          this.preSelectUserCompanies(); // Pré-sélectionne après chargement
+          this.isLoadingCompanies = false;
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des entreprises associées', error);
+          this.toastService.showError('Impossible de charger les entreprises associées.');
+          this.isLoadingCompanies = false;
+        }
+      });
+  }
+
+  preSelectUserCompanies() {
+    if (this.companies.length > 0 && this.userCompanies.length > 0) {
+      const userCompanyIds = this.userCompanies.map((uc: any) =>
+        typeof uc === 'number' ? uc : uc.company_id
+      );
+
+      this.selectedCompanies = this.companies.filter((company: any) =>
+        userCompanyIds.includes(company.id)
+      );
+
+      this.toastService.showSuccess(`${this.selectedCompanies.length} entreprises déjà associées pré-sélectionnées.`);
+    }
   }
 
   searchCompanies() {
-    if (this.searchQuery) {
-      this.filteredCompanies = this.companies.filter((company) =>
-        company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    } else {
-      this.filteredCompanies = [...this.companies];
-    }
+    this.filteredCompanies = this.searchQuery
+      ? this.companies.filter((company) =>
+          company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+        )
+      : this.companies;
   }
 
   toggleCompanySelection(company: any) {
@@ -71,7 +134,7 @@ export class AssociateCompaniesModalComponent implements OnInit {
   }
 
   isSelected(company: any): boolean {
-    return this.selectedCompanies.some(c => c.id === company.id);
+    return this.selectedCompanies.some((selectedCompany) => selectedCompany.id === company.id);
   }
 
   removeCompany(company: any) {
@@ -79,13 +142,32 @@ export class AssociateCompaniesModalComponent implements OnInit {
   }
 
   submit() {
-    this.companiesSelected.emit({
-      user: this.user,
-      selectedCompanies: this.selectedCompanies,
+    const dto: AssociateUserToCompaniesDto = {
+      userId: this.user.id,
+      companyIds: this.selectedCompanies.map(company => company.id),
+    };
+
+    if (dto.companyIds.length === 0) {
+      // this.toastService.showWarning('Aucune entreprise sélectionnée, la liste sera vidée.');
+    }
+
+    this.isLoading = true;
+    this.userCompanyService.associateUserToCompanies(dto).subscribe({
+      next: (response) => {
+        console.log('Réponse API :', response);
+        this.toastService.showSuccess('Associations enregistrées avec succès.');
+        this.companiesSelected.emit({
+          user: this.user,
+          selectedCompanies: this.selectedCompanies,
+        });
+        this.modal.close();
+      },
+      error: (error) => {
+        console.error('Erreur lors de l\'association des entreprises', error);
+        this.toastService.showError('Impossible d\'enregistrer les associations.');
+        this.isLoading = false;
+      }
     });
-    console.log('USER :', this.user);
-    console.log('Entreprises sélectionnées :', this.selectedCompanies);
-    this.modal.close();
   }
 
   cancel() {

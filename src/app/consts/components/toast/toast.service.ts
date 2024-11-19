@@ -13,7 +13,7 @@ export class ToastService {
     private cfr: ComponentFactoryResolver
   ) {}
 
-  private createToast(message: string, type: 'success' | 'error') {
+  private createToast(message: string, type: 'success' | 'error' | 'warning')  {
     const toastFactory = this.cfr.resolveComponentFactory(ToastComponent);
     const toastComponentRef = toastFactory.create(this.injector);
     toastComponentRef.instance.message = message;
@@ -39,5 +39,9 @@ export class ToastService {
 
   showError(message: string) {
     this.createToast(message, 'error');
+  }
+
+  showWarning(message: string) {
+    this.createToast(message, 'warning');
   }
 }

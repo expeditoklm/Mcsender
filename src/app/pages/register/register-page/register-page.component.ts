@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormControlComponent, NzFormModule } from 'ng-zorro-antd/form';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputGroupComponent, NzInputModule } from 'ng-zorro-antd/input';
+import { RegisterService } from '../services/register.service';
+import { ToastComponent } from '../../../consts/components/toast/toast.component';
+import { ToastService } from '../../../consts/components/toast/toast.service';
 
 @Component({
   selector: 'app-register-page',
@@ -28,12 +31,10 @@ import { NzInputGroupComponent, NzInputModule } from 'ng-zorro-antd/input';
 
 export class RegisterPageComponent implements OnInit {
   registerForm!: FormGroup;
+  userData!: any;
+  userDto!: any;
 
-  // Icônes NG-ZORRO
-  userIcon = 'user';
-  emailIcon = 'mail';
-  passwordIcon = 'lock';
-  phoneIcon = 'phone';
+
 
   // Messages d'erreur
   nameErrorTip = 'Le nom est requis.';
@@ -42,13 +43,19 @@ export class RegisterPageComponent implements OnInit {
   confirmPasswordErrorTip = 'Les mots de passe ne correspondent pas.';
   phoneErrorTip = 'Numéro de téléphone invalide.';
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder,
+    private registerService : RegisterService,
+    private router: Router,
+    private toastService: ToastService,
+    
+  ) {}
 
   ngOnInit(): void {
     this.registerForm = this.fb.group({
-      fullName: ['', [Validators.required]],
+      name: ['', [Validators.required]],
+      username: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+      phone: ['', [Validators.required, Validators.pattern('^[0-9]{8}$')]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]]
     }, {
@@ -69,9 +76,25 @@ export class RegisterPageComponent implements OnInit {
 
   onSubmit(): void {
     if (this.registerForm.valid) {
-      console.log('Formulaire valide:', this.registerForm.value);
+      this.userData= this.registerForm.value
+      this.userDto = {
+        name:this.userData.name,
+        username:this.userData.username,
+        email:this.userData.email,
+        password:this.userData.password,
+      }
+      this.registerService.signUp(this.userDto).subscribe({
+        next: (data) => {
+          this.toastService.showSuccess('Utilisateur créé avec succès');
+          this.router.navigateByUrl('/login');
+        },
+        error: (error) => {
+          this.toastService.showError('Inscription Echouer');
+        }
+      });
+      // console.log('Formulaire valide:', this.registerForm.value);
       // Logique d'inscription à implémenter
-      alert('Inscription réussie !');
+      // alert('Inscription réussie !');
     } else {
       Object.values(this.registerForm.controls).forEach(control => {
         if (control.invalid) {

@@ -11,7 +11,7 @@ import { Component, OnInit } from '@angular/core';
 export class ToastComponent implements OnInit {
 
   message: string = '';
-  messageType: 'success' | 'error' = 'success';
+  messageType: 'success' | 'error' | 'warning' = 'success'; // Correction du type.
   isVisible: boolean = false;
 
   constructor() { }

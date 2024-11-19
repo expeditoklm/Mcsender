@@ -18,20 +18,26 @@
   </ng-template>
 
   <!-- Liste des entreprises avec cases à cocher -->
-  <nz-list class="company-list" [nzDataSource]="filteredCompanies" nzBordered nzItemLayout="horizontal">
-    <ng-container *ngFor="let company of filteredCompanies">
-      <nz-list-item>
-        <label class="company-item">
-          <input
-            type="checkbox"
-            [checked]="isSelected(company)"
-            (change)="toggleCompanySelection(company)"
-          />
-          <span class="company-name">{{ company?.name }}</span>
-        </label>
-      </nz-list-item>
-    </ng-container>
-  </nz-list>
+<nz-list
+class="company-list"
+[nzDataSource]="filteredCompanies"
+nzBordered
+nzItemLayout="horizontal"
+>
+<ng-container *ngFor="let company of filteredCompanies">
+  <nz-list-item>
+    <label class="company-item">
+      <input
+        type="checkbox"
+        [ngModel]="isSelected(company)" 
+        (ngModelChange)="toggleCompanySelection(company)"
+      />
+      <span class="company-name">{{ company?.name }}</span>
+    </label>
+  </nz-list-item>
+</ng-container>
+</nz-list>
+
 
   <!-- Liste des entreprises sélectionnées -->
   <div *ngIf="selectedCompanies.length > 0" class="selected-companies">

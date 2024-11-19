@@ -45,5 +45,986 @@ lister uniquement les contacts de laudience selectionner : preremplir les filtre
 
 
 
- 
-           #4f46e5 #6366f1
+
+
+-----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+redige moi le dto , le controlleur et le service pour gerer le CRUD
+
+Schemas prisma : (le model prisma et les models associée)
+
+model User {
+    id         Int      @id @default(autoincrement())
+    name       String?
+    username   String?
+    email      String   @unique
+    role       String
+    password   String
+    deleted    Boolean  @default(false)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    // Relation with UserCompany
+    userCompanies UserCompany[]
+
+    // Relation with Campaigns
+
+    @@map("users")
+}
+
+
+
+
+model UserCompany {
+    id         Int      @id @default(autoincrement())
+    user_id    Int
+    company_id Int
+    deleted    Boolean  @default(false)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    isMember   Boolean  @default(false)
+    // Relations
+    user    User    @relation(fields: [user_id], references: [id])
+    company Company @relation(fields: [company_id], references: [id])
+
+    @@unique([user_id, company_id])
+    @@map("user_company")
+}
+
+prend exemple sur les controlleurs et les services de mon module template
+controlleur : (controlleur exemplaire)
+
+import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { TemplateService } from './template.service';
+import { CreateTemplateDto } from './dto/createTemplate.dto';
+import { UpdateTemplateDto } from './dto/updateTemplate.dto';
+import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+
+@ApiTags('Templates')  // Catégorie Swagger pour les templates
+@Controller('templates')
+export class TemplateController {
+  constructor(private readonly templateService: TemplateService) { }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post()
+  @ApiOperation({ summary: 'Créer un nouveau modèle' })  // Résumé pour Swagger
+  @ApiBody({ description: 'Données pour créer un modèle', type: CreateTemplateDto })  // Corps de la requête attendu
+  @ApiResponse({ status: 201, description: 'Modèle créé avec succès.' })  // Réponse attendue
+  async create(@Body() createTemplateDto: CreateTemplateDto) {
+    return this.templateService.create(createTemplateDto);
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get()
+  @ApiOperation({ summary: 'Obtenir tous les modèles' })  // Décrit l'opération pour obtenir tous les modèles
+  @ApiResponse({ status: 200, description: 'Modèles obtenus avec succès.' })  // Réponse attendue
+  async findAll() {
+    return this.templateService.findAll();
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtenir un modèle par son ID' })  // Décrit l'opération pour obtenir un modèle spécifique
+  @ApiParam({ name: 'id', description: 'ID du modèle' })  // Paramètre ID
+  @ApiResponse({ status: 200, description: 'Modèle trouvé.' })  // Réponse attendue
+  @ApiResponse({ status: 404, description: 'Modèle non trouvé.' })  // Réponse en cas d'erreur
+  async findOne(@Param('id') id: number) {
+    return this.templateService.findOne(+id);
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  @ApiOperation({ summary: 'Mettre à jour un modèle existant' })  // Décrit l'opération de mise à jour
+  @ApiParam({ name: 'id', description: 'ID du modèle à mettre à jour' })  // Paramètre ID
+  @ApiBody({ description: 'Données pour mettre à jour le modèle', type: UpdateTemplateDto })  // Corps de la requête attendu
+  @ApiResponse({ status: 200, description: 'Modèle mis à jour.' })  // Réponse attendue
+  @ApiResponse({ status: 404, description: 'Modèle non trouvé.' })  // Réponse en cas d'erreur
+  async update(@Param('id') id: number, @Body() updateTemplateDto: UpdateTemplateDto) {
+    return this.templateService.update(+id, updateTemplateDto);
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un modèle' })  // Décrit l'opération de suppression
+  @ApiParam({ name: 'id', description: 'ID du modèle à supprimer' })  // Paramètre ID
+  @ApiResponse({ status: 200, description: 'Modèle supprimé.' })  // Réponse attendue
+  @ApiResponse({ status: 404, description: 'Modèle non trouvé.' })  // Réponse en cas d'erreur
+  async remove(@Param('id') id: number) {
+    return this.templateService.remove(+id);
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('apply')
+  @ApiOperation({ summary: 'Appliquer un modèle à une campagne' })  // Décrit l'opération pour appliquer un modèle à une campagne
+  @ApiBody({
+    description: 'Données pour appliquer un modèle à une campagne',
+    schema: {
+      type: 'object',
+      properties: {
+        templateId: { type: 'number', description: 'ID du modèle' },
+        campaignId: { type: 'number', description: 'ID de la campagne' },
+      },
+    },
+  })  // Corps de la requête attendu
+  @ApiResponse({ status: 200, description: 'Modèle appliqué à la campagne avec succès.' })  // Réponse attendue
+  @ApiResponse({ status: 400, description: 'Échec de l\'application du modèle à la campagne.' })  // Réponse en cas d'erreur
+  async applyTemplateToCampaign(
+    @Body('templateId') templateId: number,
+    @Body('campaignId') campaignId: number,
+  ) {
+    return this.templateService.applyTemplateToCampaign(templateId, campaignId);
+  }
+
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('preview/:id')
+  @ApiOperation({ summary: 'Prévisualiser un modèle' })  // Décrit l'opération pour prévisualiser un modèle
+  @ApiParam({ name: 'id', description: 'ID du modèle à prévisualiser' })  // Paramètre ID
+  @ApiResponse({ status: 200, description: 'Prévisualisation du modèle réussie.' })  // Réponse attendue
+  @ApiResponse({ status: 404, description: 'Modèle non trouvé pour la prévisualisation.' })  // Réponse en cas d'erreur
+  async previewTemplate(@Param('id') templateId: number) {
+    return this.templateService.previewTemplate(+templateId);
+  }
+}
+
+
+service : (service exemplaire)
+
+
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateTemplateDto } from './dto/createTemplate.dto';
+import { UpdateTemplateDto } from './dto/updateTemplate.dto';
+
+@Injectable()
+export class TemplateService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  // Créer un nouveau Template
+  async create(createTemplateDto: CreateTemplateDto) {
+    // Vérification des champs obligatoires
+    const { content, template_type_id, channel_id } = createTemplateDto;
+
+    if (!content) {
+      throw new BadRequestException('Le champ "contenu" est requis pour créer un modèle.');
+    }
+    if (!template_type_id) {
+      throw new BadRequestException('L\'ID du type de modèle est requis pour créer un modèle.');
+    }
+    if (!channel_id) {
+      throw new BadRequestException('L\'ID du canal est requis pour créer un modèle.');
+    }
+
+    // Validation des IDs
+    if (isNaN(template_type_id) || template_type_id <= 0) {
+      throw new BadRequestException('L\'ID du type de modèle doit être un nombre valide supérieur à zéro.');
+    }
+    if (isNaN(channel_id) || channel_id <= 0) {
+      throw new BadRequestException('L\'ID du canal doit être un nombre valide supérieur à zéro.');
+    }
+
+    // Vérifier l'existence du type de modèle
+    const templateTypeExists = await this.prisma.templateType.findUnique({
+      where: { id: template_type_id },
+    });
+
+    if (!templateTypeExists) {
+      throw new NotFoundException(`Le type de modèle avec l'ID ${template_type_id} n'existe pas.`);
+    }
+
+    // Vérifier l'existence du canal
+    const channelExists = await this.prisma.channel.findUnique({
+      where: { id: channel_id },
+    });
+
+    if (!channelExists) {
+      throw new NotFoundException(`Le canal avec l'ID ${channel_id} n'existe pas.`);
+    }
+
+    // Vérifier la duplication du modèle
+    const existingTemplate = await this.prisma.template.findFirst({
+      where: {
+        content: createTemplateDto.content,
+        template_type_id: createTemplateDto.template_type_id,
+        deleted: false,  // S'assurer que ce n'est pas un modèle supprimé
+      },
+    });
+
+    if (existingTemplate) {
+      throw new ConflictException('Un modèle avec les mêmes détails existe déjà.');
+    }
+
+    // Création du modèle
+    return this.prisma.template.create({
+      data: {
+        name: createTemplateDto.name,
+        content: createTemplateDto.content,
+        template_type_id,
+      },
+    });
+  }
+
+  // Récupérer tous les Templates
+  async findAll() {
+    try {
+      return await this.prisma.template.findMany({
+        where: { deleted: false },  // Ne retourner que les modèles non supprimés
+        include: {
+          templateType: true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException('Erreur lors de la récupération des modèles.');
+    }
+  }
+
+  // Récupérer un Template par ID
+  async findOne(id: number) {
+    if (isNaN(id) || id <= 0) {
+      throw new BadRequestException('L\'ID du modèle doit être un nombre valide supérieur à zéro.');
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+      include: {
+        templateType: true,
+      },
+    });
+
+    if (!template || template.deleted) {
+      throw new NotFoundException(`Aucun modèle trouvé avec l'ID ${id}.`);
+    }
+
+    return template;
+  }
+
+  // Mettre à jour un Template
+  async update(id: number, updateTemplateDto: UpdateTemplateDto) {
+    if (isNaN(id) || id <= 0) {
+      throw new BadRequestException('L\'ID du modèle doit être un nombre valide supérieur à zéro.');
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Aucun modèle trouvé avec l'ID ${id}.`);
+    }
+
+    if (template.deleted) {
+      throw new BadRequestException('Ce modèle a été supprimé et ne peut pas être mis à jour.');
+    }
+
+    // Valider le type de modèle et le canal si fournis
+    if (updateTemplateDto.template_type_id && (isNaN(updateTemplateDto.template_type_id) || updateTemplateDto.template_type_id <= 0)) {
+      throw new BadRequestException('L\'ID du type de modèle doit être un nombre valide supérieur à zéro.');
+    }
+    if (updateTemplateDto.channel_id && (isNaN(updateTemplateDto.channel_id) || updateTemplateDto.channel_id <= 0)) {
+      throw new BadRequestException('L\'ID du canal doit être un nombre valide supérieur à zéro.');
+    }
+
+    return this.prisma.template.update({
+      where: { id },
+      data: updateTemplateDto,
+    });
+  }
+
+  // Supprimer un Template
+  async remove(id: number) {
+    if (isNaN(id) || id <= 0) {
+      throw new BadRequestException('L\'ID du modèle doit être un nombre valide supérieur à zéro.');
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+    });
+
+    if (!template || template.deleted) {
+      throw new NotFoundException(`Aucun modèle trouvé avec l'ID ${id} ou il est déjà supprimé.`);
+    }
+
+    return this.prisma.template.update({
+      where: { id },
+      data: { deleted: true },
+    });
+  }
+
+  // Appliquer un template à une campagne
+  async applyTemplateToCampaign(templateId: number, campaignId: number) {
+    if (isNaN(templateId) || templateId <= 0) {
+      throw new BadRequestException('L\'ID du modèle doit être un nombre valide supérieur à zéro.');
+    }
+
+    if (isNaN(campaignId) || campaignId <= 0) {
+      throw new BadRequestException('L\'ID de la campagne doit être un nombre valide supérieur à zéro.');
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!template || template.deleted) {
+      throw new NotFoundException(`Aucun modèle trouvé avec l'ID ${templateId} ou il a été supprimé.`);
+    }
+
+    // Logique d'application du modèle à la campagne
+    return `Le modèle avec l'ID ${templateId} a été appliqué à la campagne avec l'ID ${campaignId}.`;
+  }
+
+  // Prévisualiser un template
+  async previewTemplate(templateId: number) {
+    if (isNaN(templateId) || templateId <= 0) {
+      throw new BadRequestException('L\'ID du modèle doit être un nombre valide supérieur à zéro.');
+    }
+
+    const template = await this.prisma.template.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!template || template.deleted) {
+      throw new NotFoundException(`Aucun modèle trouvé avec l'ID ${templateId} ou il a été supprimé.`);
+    }
+
+    return {
+      id: template.id,
+      name: template.name,
+      content: template.content,
+      template_type_id: template.template_type_id,
+    };
+  }
+}
+
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+
+complete moi ce service angular : 
+
+
+// modal.service.ts
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import { User } from '../../users/models/user';
+import { environment } from '../../../environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UserService { 
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) { }
+
+  private registerUrl = `${environment.apiUrl}auth/signup`;
+
+
+//   signUp(userDto: User) {
+//     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+//     return this.http.post(this.registerUrl, userDto, { headers });
+//   }
+
+} 
+. voici mon controlleur nest js : (service generer)
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------
+
+
+voici mon composant user page qui listes les users que 
+javais fais statiquement sans api maintenant que jai fait mon api : (le composant page angular)
+aide moi a reprendre mon composant a partir de mon service : 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+this.companiesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
+      .subscribe({
+        next: (companies) => {
+          this.userCompanies = companies;
+          this.isLoadingCompanies = false;
+        },
+        error: () => {
+          this.isLoadingCompanies = false;
+        }
+      });
+
+
+
+
+      https://temp-mail.org/fr/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NzInputGroupComponent } from 'ng-zorro-antd/input';
+import { NzListComponent, NzListItemComponent } from 'ng-zorro-antd/list';
+import { NZ_MODAL_DATA, NzModalComponent, NzModalRef } from 'ng-zorro-antd/modal';
+import { CompanyService } from '../../services/company.service';
+import { UserCompanyService } from '../../services/userCompany.service';
+import { NzTagComponent } from 'ng-zorro-antd/tag';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { Subscription } from 'rxjs';
+import { NzSpinComponent } from 'ng-zorro-antd/spin';
+import { NzInputModule } from 'ng-zorro-antd/input';
+
+export interface AssociateUserToCompaniesDto {
+  userId: number;
+  companyIds: number[];
+}
+
+@Component({
+  selector: 'app-associate-companies-modal',
+  standalone: true,
+  imports: [
+    CommonModule,
+    NzModalComponent,
+    NzInputGroupComponent,
+    NzListComponent,
+    FormsModule,
+    ReactiveFormsModule,
+    NzListItemComponent,
+    NzTagComponent,
+    NzButtonModule,
+    NzIconModule,
+    NzSpinComponent
+  ],
+  templateUrl: './associate-companies-modal.component.html',
+  styleUrl: './associate-companies-modal.component.css'
+})
+export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
+  @Input() user: any;
+  @Output() companiesSelected = new EventEmitter<{ user: any, selectedCompanies: any[] }>();
+
+  searchQuery: string = '';
+  companies: any[] = [];
+  filteredCompanies: any[] = [];
+  selectedCompanies: any[] = [];
+  userCompanies: any[] = [];
+  isLoading: boolean = false;
+  isLoadingCompanies: boolean = false;
+  private companiesSubscription: Subscription | null = null;
+  private userCompaniesSubscription: Subscription | null = null;
+
+  constructor(
+    private modal: NzModalRef,
+    private companyService: CompanyService,
+    private userCompanyService: UserCompanyService,
+    @Inject(NZ_MODAL_DATA) public data: any
+  ) {}
+
+  ngOnInit(): void {
+    this.user = this.data.user;
+    this.loadCompanies();
+  }
+
+  ngOnDestroy(): void {
+    this.companiesSubscription?.unsubscribe();
+    this.userCompaniesSubscription?.unsubscribe();
+  }
+
+  loadCompanies() {
+    this.isLoading = true;
+    this.companiesSubscription = this.companyService.getAllCompanies().subscribe({
+      next: (response: any) => {
+        this.companies = response.companies || [];
+        this.filteredCompanies = [...this.companies];
+        this.loadUserCompanies();
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des entreprises', error);
+        this.companies = [];
+        this.filteredCompanies = [];
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadUserCompanies() {
+    this.isLoadingCompanies = true;
+    this.userCompaniesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
+      .subscribe({
+        next: (companies) => {
+          this.userCompanies = companies;
+          this.preSelectUserCompanies(); // Pré-sélectionne après chargement
+          this.isLoadingCompanies = false;
+        },
+        error: () => {
+          this.isLoadingCompanies = false;
+        }
+      });
+  }
+  
+
+  preSelectUserCompanies() {
+    if (this.companies.length > 0 && this.userCompanies.length > 0) {
+      const userCompanyIds = this.userCompanies.map((uc: any) =>
+        typeof uc === 'number' ? uc : uc.id
+      );
+  
+      // Ajouter les entreprises correspondantes à `selectedCompanies`
+      this.selectedCompanies = this.companies.filter((company: any) =>
+        userCompanyIds.includes(company.id)
+      );
+    }
+  }
+  
+  searchCompanies() {
+    this.filteredCompanies = this.searchQuery
+      ? this.companies.filter((company) =>
+          company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+        )
+      : this.companies;
+  }
+
+  toggleCompanySelection(company: any) {
+    const index = this.selectedCompanies.findIndex(c => c.id === company.id);
+    if (index === -1) {
+      this.selectedCompanies.push(company);
+    } else {
+      this.selectedCompanies.splice(index, 1);
+    }
+  }
+
+  isSelected(company: any): boolean {
+    return this.userCompanies.some((c: any) => c.id === company.id);
+  }
+  
+  removeCompany(company: any) {
+    this.selectedCompanies = this.selectedCompanies.filter(c => c.id !== company.id);
+  }
+
+  submit() {
+    if (this.selectedCompanies.length > 0) {
+      const dto: AssociateUserToCompaniesDto = {
+        userId: this.user.id,
+        companyIds: this.selectedCompanies.map(company => company.id)
+      };
+  
+      this.isLoading = true;
+      this.userCompanyService.associateUserToCompanies(dto).subscribe({
+        next: (response) => {
+          this.companiesSelected.emit({
+            user: this.user,
+            selectedCompanies: this.selectedCompanies,
+          });
+          this.modal.close();
+        },
+        error: (error) => {
+          console.error('Erreur lors de l\'association des entreprises', error);
+          this.isLoading = false;
+        }
+      });
+    } else {
+      this.modal.close();
+    }
+  }
+
+  cancel() {
+    this.modal.close();
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="modal-header">
+  <h3 class="modal-title">Associer des entreprises à {{ user?.name }}</h3>
+</div>
+
+<div class="modal-body associate-modal-content">
+  <!-- Barre de recherche -->
+  <nz-input-group [nzSuffix]="suffixTemplate" class="search-bar">
+    <input
+      type="text"
+      nz-input
+      placeholder="Rechercher des entreprises"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="searchCompanies()"
+    />
+  </nz-input-group>
+  <ng-template #suffixTemplate>
+    <i nz-icon nzType="search" nzTheme="outline"></i>
+  </ng-template>
+
+  <!-- Liste des entreprises avec cases à cocher -->
+<nz-list
+class="company-list"
+[nzDataSource]="filteredCompanies"
+nzBordered
+nzItemLayout="horizontal"
+>
+<ng-container *ngFor="let company of filteredCompanies">
+  <nz-list-item>
+    <label class="company-item">
+      <input
+        type="checkbox"
+        [checked]="isSelected(company)" 
+        (change)="toggleCompanySelection(company)"
+      />
+      <span class="company-name">{{ company?.name }}</span>
+    </label>
+  </nz-list-item>
+</ng-container>
+</nz-list>
+
+
+  <!-- Liste des entreprises sélectionnées -->
+  <div *ngIf="selectedCompanies.length > 0" class="selected-companies">
+    <h4>Entreprises sélectionnées :</h4>
+    <ul>
+      <li *ngFor="let company of selectedCompanies" class="selected-company-item">
+        {{ company?.name }}
+        <button nz-button nzType="link" (click)="removeCompany(company)" class="remove-btn">
+          <i nz-icon nzType="close" nzTheme="outline"></i> Supprimer
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button nz-button nzType="primary" (click)="submit()">Soumettre</button>
+  <button nz-button nzType="default" (click)="cancel()">Annuler</button>
+</div>
