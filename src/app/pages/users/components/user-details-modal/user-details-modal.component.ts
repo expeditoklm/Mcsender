@@ -1,27 +1,24 @@
-import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, Inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
-
-// Ng Zorro Modules
 import { NzModalModule, NzModalRef, NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { NzIconModule } from 'ng-zorro-antd/icon';
+import { QueryClient, QueryObserver } from '@ngneat/query';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { UserCompanyService } from '../../services/userCompany.service';
 import { User } from '../../models/user';
+import { Company } from '../../../companies/models/company';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTabComponent, NzTabSetComponent } from 'ng-zorro-antd/tabs';
 
-// Services
 
-// Interfaces
 
 @Component({
   selector: 'app-user-details-modal',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     NzModalModule,
     NzButtonModule,
     NzCardModule,
@@ -32,63 +29,71 @@ import { NzTabComponent, NzTabSetComponent } from 'ng-zorro-antd/tabs';
     NzTabComponent,
   ],
   templateUrl: './user-details-modal.component.html',
-  styleUrls: ['./user-details-modal.component.css']
+  styleUrls: ['./user-details-modal.component.css'],
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
+export class UserDetailsModalComponent implements OnInit {
+  user: any;
+  companies: any = [];
+  isLoading = true;
+  isError = false;
+  isLoading$ = new BehaviorSubject<boolean>(false);
 
-export class UserDetailsModalComponent implements OnInit, OnDestroy {
-  user: User;
-  userCompanies: any = [];
-  isLoadingCompanies = false;
   
-  private companiesSubscription?: Subscription;
-
   constructor(
     private modalRef: NzModalRef,
     private userCompanyService: UserCompanyService,
-    @Inject(NZ_MODAL_DATA) public data: { user: User }
+    @Inject(NZ_MODAL_DATA) public data: { user: User },
+    private cdr: ChangeDetectorRef, // Importer
+    private queryClient: QueryClient
   ) {
     this.user = data.user;
   }
 
   ngOnInit(): void {
-    this.loadUserCompanies();
+    setTimeout(() => {
+      this.loadUserCompanies();
+    }, 10000); // Délai en millisecondesbv      
   }
-
-  ngOnDestroy(): void {
-    this.companiesSubscription?.unsubscribe();
-  }
-
+  
   loadUserCompanies(): void {
-    if (this.user?.id) {
-    this.isLoadingCompanies = true;
-    this.companiesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
-      .subscribe({
-        next: (companies) => {
-          this.userCompanies = companies;
-          this.isLoadingCompanies = false;
-        },
-        error: () => {
-          this.isLoadingCompanies = false;
-        }
-      });
+    this.isLoading = true; // Commencez le chargement
+    const queryObserver = new QueryObserver<Company[]>(this.queryClient, {
+      queryKey: ['userCompanies', this.user.id],
+      queryFn: async () => {
+        return await firstValueFrom(this.userCompanyService.getAllCompanyForUser(this.user.id));
+      }
+    });
+  
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        this.isError = true;
+        console.error('Error fetching user companies:', result.error);
+      } else {
+        this.companies = result.data || [];
+        this.isError = false;
+        this.isLoading = result.isFetching;
+      }
+    });
+    
   }
-}
+  
+  
 
-  /**
-   * Détermine la couleur du tag en fonction du rôle
-   * @param role Rôle de l'utilisateur
-   * @returns Couleur correspondante
-   */
+
   getRoleColor(role: string): string {
-    switch (role?.toLowerCase()) {
+    switch (role.toLowerCase()) {
       case 'admin':
         return 'red';
-      case 'user':
+      case 'manager':
         return 'blue';
-      case 'super-admin':
-        return 'green';
       default:
-        return 'default';
+        return 'green';
     }
   }
 

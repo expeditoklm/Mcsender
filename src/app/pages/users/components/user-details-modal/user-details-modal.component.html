@@ -1,85 +1,77 @@
-<nz-modal 
-  [nzVisible]="true" 
-  [nzTitle]="'Détails de l\'utilisateur: ' + user.name" 
-
+<nz-modal
+  [nzVisible]="true"
+  [nzTitle]="'Détails de l\'utilisateur: ' + user.name"
   [nzWidth]="800"
   class="user-details-modal"
 >
   <ng-container *nzModalContent>
     <div class="bg-gray-50 rounded-lg">
-      <nz-tabset 
-        nzType="card" 
-        class="custom-tabs"
-      >
+      <nz-tabset nzType="card" class="custom-tabs">
         <!-- Onglet Informations Générales -->
         <nz-tab nzTitle="Informations Générales">
-          <div class="p-6">
-            <div class="grid md:grid-cols-2 gap-6 bg-white rounded-lg shadow-sm p-6">
+          <div class="p-6 bg-white rounded-lg shadow-sm">
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- Colonne 1 -->
               <div class="space-y-3">
-                <div class="flex items-center" style="display: flex; ">
+                <div class="flex items-center">
                   <i nz-icon nzType="user" class="mr-3 text-blue-500"></i>
-                  <div>
-                    <strong class="text-gray-700" style=" margin-left: 10px;">Nom :</strong> 
-                    <span class="text-gray-900">{{ user.name || 'Non renseigné' }}</span>
-                  </div>
+                  <strong class="text-gray-700 mr-2">Nom :</strong>
+                  <span class="text-gray-900">{{ user.name || 'Non renseigné' }}</span>
                 </div>
-                <div class="flex items-center" style="display: flex; ">
+                <div class="flex items-center">
                   <i nz-icon nzType="user" class="mr-3 text-blue-500"></i>
-                  <div>
-                    <strong class="text-gray-700" style=" margin-left: 10px;">Nom d'utilisateur :</strong> 
-                    <span class="text-gray-900">{{ user.username || 'Non renseigné' }}</span>
-                  </div>
+                  <strong class="text-gray-700 mr-2">Nom d'utilisateur :</strong>
+                  <span class="text-gray-900">{{ user.username || 'Non renseigné' }}</span>
                 </div>
               </div>
-              
+              <!-- Colonne 2 -->
               <div class="space-y-3">
-                <div class="flex items-center " style="display: flex; " >
+                <div class="flex items-center">
                   <i nz-icon nzType="mail" class="mr-3 text-blue-500"></i>
-                  <div>
-                    <strong class="text-gray-700 "style=" margin-left: 10px;">Email :</strong> 
-                    <span class="text-gray-900">{{ user.email || 'Non renseigné' }}</span>
-                  </div>
+                  <strong class="text-gray-700 mr-2">Email :</strong>
+                  <span class="text-gray-900">{{ user.email || 'Non renseigné' }}</span>
                 </div>
-                <div class="flex items-center" style="display: flex; ">
+                <div class="flex items-center">
                   <i nz-icon nzType="tags" class="mr-3 text-blue-500"></i>
-                  <div>
-                    <strong class="text-gray-700" style=" margin-left: 10px;">Rôle :</strong> 
-                    <nz-tag 
-                      [nzColor]="getRoleColor(user.role)"
-                      class="font-semibold"
-                    >
-                      {{ user.role || 'Non défini' }}
-                    </nz-tag>
-                  </div>
+                  <strong class="text-gray-700 mr-2">Rôle :</strong>
+                  <nz-tag
+                    [nzColor]="getRoleColor(user.role)"
+                    class="font-semibold"
+                  >
+                    {{ user.role || 'Non défini' }}
+                  </nz-tag>
                 </div>
               </div>
             </div>
           </div>
         </nz-tab>
-        
         <!-- Onglet Informations Professionnelles -->
         <nz-tab nzTitle="Informations Professionnelles">
           <div class="p-6">
             <h3 class="text-xl font-semibold mb-4 flex items-center">
               <i nz-icon nzType="apartment" class="mr-3 text-blue-500"></i>
               Entreprises de {{ user.name }}
-              <nz-spin *ngIf="isLoadingCompanies" nzSimple class="ml-3"></nz-spin>
+              <nz-spin *ngIf="isLoading$ | async" nzSimple class="ml-3"></nz-spin>
             </h3>
+            <div *ngIf="isLoading" class="loading-indicator">
+              <div nzTip="Chargement..."></div>
+            </div>
             
-            <!-- Liste des entreprises -->
-            <div *ngIf="!isLoadingCompanies" class="space-y-4">
-              <nz-card 
-                *ngFor="let company of userCompanies" 
+            <div *ngIf="!isLoading && !isError && companies.length > 0" class="space-y-4">
+              <!-- <pre *ngIf="!isLoading">{{ companies | json }}</pre> -->
+
+              <nz-card
+                *ngFor="let company of companies"
                 class="hover:shadow-md transition-shadow duration-300 rounded-lg"
               >
                 <div class="flex justify-between items-center">
                   <div>
-                    <strong class="text-lg text-gray-800">{{ company.company.name }}</strong>
+                    <strong class="text-lg text-gray-800">{{  company.company.name}}</strong>
                     <p class="text-gray-500 text-sm mt-1">
                       {{ company.company.description || 'Description non renseignée' }}
                     </p>
                   </div>
-                  <nz-tag 
+                  <nz-tag
                     [nzColor]="company.isMember ? 'success' : 'warning'"
                     class="font-semibold"
                   >
@@ -87,28 +79,29 @@
                   </nz-tag>
                 </div>
               </nz-card>
-              
-              <!-- Message si aucune entreprise -->
-              <div 
-                *ngIf="userCompanies.length === 0" 
-                class="text-center text-gray-500 bg-gray-100 p-6 rounded-lg"
-              >
-                <i nz-icon nzType="info-circle" class="mr-2 text-blue-500"></i>
-                Aucune entreprise associée
-              </div>
             </div>
+            
+            <div *ngIf="!isLoading && !isError && companies.length === 0" class="text-center text-gray-500 bg-gray-100 p-6 rounded-lg">
+              <i nz-icon nzType="info-circle" class="mr-2 text-blue-500"></i>
+              Aucune entreprise associée
+            </div>
+            
+            <div *ngIf="isError" class="text-center text-red-500 bg-red-100 p-6 rounded-lg">
+              <i nz-icon nzType="warning" class="mr-2"></i>
+              Une erreur est survenue lors du chargement des entreprises.
+            </div>
+            
           </div>
         </nz-tab>
       </nz-tabset>
     </div>
   </ng-container>
-
   <!-- Boutons du modal -->
   <div *nzModalFooter>
-    <button 
-      nz-button 
-      nzType="default" 
-      class="mr-2" 
+    <button
+      nz-button
+      nzType="default"
+      class="mr-2"
       (click)="closeModal()"
     >
       Fermer
