@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { NzModalRef } from 'ng-zorro-antd/modal';
+import { Component, Inject, Input, OnInit } from '@angular/core';
+import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -33,25 +33,29 @@ import { User } from '../../models/user';
     NzSelectComponent
   ]
 })
-export class UserCreateComponent {
-  @Input() userData: any; // Données initiales fournies par le parent
+export class UserCreateComponent implements OnInit {
+  @Input() userData?: any; // Données initiales fournies par le parent
 
   formData : User = {
+    id: undefined,
     name: '',
     username: '',
     email: '',
     role: '',
-    password: '',
   };
 
-  constructor(private modal: NzModalRef) {}
+  constructor(private modal: NzModalRef,
+    @Inject(NZ_MODAL_DATA) public data: any
+  ) {}
 
   ngOnInit(): void {
     // Pré-remplir le formulaire si des données sont fournies
-    if (this.userData) {
+    console.log(' Data envoyé:', this.data.userData);
+
+    if (this.data.userData) {
       this.formData = {
         ...this.formData,
-        ...this.userData,
+        ...this.data.userData
       };
     }
   }

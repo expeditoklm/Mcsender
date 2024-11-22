@@ -51,12 +51,8 @@
             <h3 class="text-xl font-semibold mb-4 flex items-center">
               <i nz-icon nzType="apartment" class="mr-3 text-blue-500"></i>
               Entreprises de {{ user.name }}
-              <nz-spin *ngIf="isLoading$ | async" nzSimple class="ml-3"></nz-spin>
+              <nz-spin *ngIf="isLoading " nzSimple class="ml-3"></nz-spin>
             </h3>
-            <div *ngIf="isLoading" class="loading-indicator">
-              <div nzTip="Chargement..."></div>
-            </div>
-            
             <div *ngIf="!isLoading && !isError && companies.length > 0" class="space-y-4">
               <!-- <pre *ngIf="!isLoading">{{ companies | json }}</pre> -->
 

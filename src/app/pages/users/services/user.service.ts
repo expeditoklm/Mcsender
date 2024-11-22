@@ -7,6 +7,7 @@ import { User } from '../../users/models/user';
 
 // Interfaces pour les DTOs
 export interface CreateUserDto {
+  id?: string;
   name?: string;
   username?: string;
   email: string;

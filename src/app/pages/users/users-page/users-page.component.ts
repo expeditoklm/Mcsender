@@ -6,7 +6,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject, finalize } from 'rxjs';
+import { debounceTime, Subject, finalize, firstValueFrom } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
 import { User } from '../models/user';
@@ -14,8 +14,10 @@ import { UserDetailsModalComponent } from '../components/user-details-modal/user
 import { UserCreateComponent } from '../components/user-create/user-create.component';
 import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
-import { CreateUserCompanyDto, UserService } from '../services/user.service';
+import { CreateUserCompanyDto, UpdateUserDto, UserService } from '../services/user.service';
 import { AssociateCompaniesModalComponent } from '../components/associate-companies-modal/associate-companies-modal.component';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 @Component({
   selector: 'app-users-page',
@@ -30,9 +32,16 @@ import { AssociateCompaniesModalComponent } from '../components/associate-compan
     NzIconModule,
     FormsModule,
     NzPaginationModule,
+    NzSpinModule
   ],
   templateUrl: './users-page.component.html',
-  styleUrl: './users-page.component.css'
+  styleUrl: './users-page.component.css',
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
 
 export class UsersPageComponent implements OnInit {
@@ -40,7 +49,9 @@ export class UsersPageComponent implements OnInit {
   users: User[] = [];
   filteredUsers: User[] = [];
   isLoading = false;
+  isError = false;
   searchName = '';
+  searchUserName = '';
   searchEmail = '';
   searchRole = '';
   pageIndex = 1;
@@ -55,36 +66,48 @@ export class UsersPageComponent implements OnInit {
     private router: Router,
     private deleteModalService: DeleteModalService,
     private toastService: ToastService,
-    private userService: UserService
+    private userService: UserService,
+    private queryClient: QueryClient
+
   ) {}
 
   ngOnInit() {
+    
+        setTimeout(() => {
+          this.loadUsers();
+        }, 500); // Délai en millisecondesbv     
+        
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
       this.filterUsers();
     });
-    
-    this.loadUsers();
+   
     
   }
 
   loadUsers() {
     this.isLoading = true;
-    this.userService.findAll()
-      .pipe(finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }))
-      .subscribe({
-        next: (users) => {
-          this.users = users;
-          this.filterUsers();
-        },
-        error: (error) => {
-          console.error('Erreur lors du chargement des utilisateurs:', error);
-          this.toastService.showError('Erreur lors du chargement des utilisateurs.');
-        }
-      });
+    const queryObserver = new QueryObserver<User[]>(this.queryClient, {
+      queryKey: ['usersList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.userService.findAll());
+      }
+    });
+
+
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        this.isError = true;
+        console.error('Erreur lors du chargement des utilisateurs:', result.error);
+        this.toastService.showError('Erreur lors du chargement des utilisateurs.');
+      } else {
+        this.users = result.data || [];
+        this.filterUsers();
+        this.isError = false;
+        this.isLoading = result.isFetching;
+      }
+    });
+   
   }
 
   filterUsers(): void {
@@ -103,6 +126,7 @@ export class UsersPageComponent implements OnInit {
     // Filtrage par recherche
     filtered = filtered.filter(user =>
       user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
+      user.username.toLowerCase().includes(this.searchUserName.toLowerCase()) &&
       user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
       user.role.toLowerCase().includes(this.searchRole.toLowerCase())
     );
@@ -127,30 +151,60 @@ export class UsersPageComponent implements OnInit {
     this.filterUsers();
   }
 
-  openUserCreateModal(): void {
+  openUserCreateModal(userData?: any): void {
     const modalRef = this.modalService.create({
-      nzTitle: 'Créer un utilisateur',
+      nzTitle: userData ? 'Modifier l\'utilisateur' : 'Créer un utilisateur',
       nzContent: UserCreateComponent,
       nzFooter: null,
       nzWidth: '600px',
+      nzData: {
+        userData: userData ,
+        isEdit: !!userData
+      }
     });
+  
+    modalRef.afterClose.subscribe((userDto) => {
+      if (userDto) {
+        console.log('le dto original',userDto)
+        const { id, created_at, updated_at, userCompanies,deleted,password, ...filteredUserDto } = userDto;
+        console.log('cesrt une modification ou bien ajout',userDto)
+        const operation = id ? this.userService.update(id, filteredUserDto) : this.userService.create(filteredUserDto);
+        
+        operation.subscribe({
+          next: (user) => {
+            if (userDto.id) {
+        console.log('cesrt une modification ')
 
-    modalRef.afterClose.subscribe((createUserDto) => {
-      if (createUserDto) {
-        this.userService.create(createUserDto).subscribe({
-          next: (newUser) => {
-            this.users.push(newUser);
+              // Mise à jour de l'utilisateur existant
+              const index = this.users.findIndex((u) => u.id === user.id);
+              if (index !== -1) {
+                this.users[index] = user;
+              }
+              this.toastService.showSuccess('Utilisateur mis à jour avec succès.');
+            } else {
+        console.log('cesrt un ajout',userDto)
+
+              // Création d'un nouvel utilisateur
+              this.users.push(user);
+              this.toastService.showSuccess('Utilisateur créé avec succès.');
+            }
             this.filterUsers();
-            this.toastService.showSuccess('Utilisateur créé avec succès.');
           },
           error: (error) => {
-            console.error('Erreur lors de la création de l\'utilisateur:', error);
-            this.toastService.showError('Erreur lors de la création de l\'utilisateur.');
+            console.error('Erreur lors de l\'opération utilisateur:', error.message);
+            if (error.status === 409) {
+              this.toastService.showError('Un utilisateur avec cet email existe déjà.');
+            } else {
+              this.toastService.showError(error.message);
+            }
           }
         });
       }
     });
   }
+  
+  
+  
 
   viewDetailsUser(user: User): void {
     if (!user.id) {
@@ -226,27 +280,31 @@ export class UsersPageComponent implements OnInit {
           user_id: user.id,
           company_id: result.company_id
         };
-        
-        this.userService.createUserCompany(createUserCompanyDto).subscribe({
-          next: () => {
-            this.toastService.showSuccess('Association créée avec succès.');
-            this.loadUsers();
-          },
-          error: (error) => {
-            console.error('Erreur lors de l\'association:', error);
-            this.toastService.showError('Erreur lors de l\'association avec l\'entreprise.');
-          }
-        });
       }
     });
   }
 
-
   editUser(user: User): void {
-    // Implement edit logic using userService.update()
-    console.log('Modifier l\'utilisateur:', user);
-  }
+    if (!user.id) {
+      this.toastService.showError('ID utilisateur non valide');
+      return;
+    }
 
+    this.userService.findOne(user.id).subscribe({
+      next: (userDetails) => {
+        this.modalService.create({
+          nzTitle: 'Détails de l\'utilisateur',
+          nzContent: UserDetailsModalComponent,
+          nzData: { user: userDetails },
+          nzFooter: null
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des détails:', error);
+        this.toastService.showError('Erreur lors du chargement des détails de l\'utilisateur.');
+      }
+    });
+  }
 
   ngOnDestroy() {
     // Nettoyage du Subject pour éviter les fuites de mémoire

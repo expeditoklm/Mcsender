@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzInputGroupComponent } from 'ng-zorro-antd/input';
 import { NzListComponent, NzListItemComponent } from 'ng-zorro-antd/list';
@@ -9,10 +9,12 @@ import { UserCompanyService } from '../../services/userCompany.service';
 import { NzTagComponent } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { Subscription } from 'rxjs';
-import { NzSpinComponent } from 'ng-zorro-antd/spin';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { NzSpinComponent, NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { ToastService } from '../../../../consts/components/toast/toast.service';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { Company } from '../../../companies/models/company';
 
 export interface AssociateUserToCompaniesDto {
   userId: number;
@@ -29,10 +31,17 @@ export interface AssociateUserToCompaniesDto {
     FormsModule,
     ReactiveFormsModule,
     NzListItemComponent,
+    NzSpinModule,
     NzIconModule,
   ],
   templateUrl: './associate-companies-modal.component.html',
-  styleUrl: './associate-companies-modal.component.css'
+  styleUrl: './associate-companies-modal.component.css',
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
 export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
   @Input() user: any;
@@ -45,6 +54,7 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
   userCompanies: any[] = [];
   isLoading: boolean = false;
   isLoadingCompanies: boolean = false;
+  isError = false;
   private companiesSubscription: Subscription | null = null;
   private userCompaniesSubscription: Subscription | null = null;
 
@@ -53,12 +63,16 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
     private companyService: CompanyService,
     private userCompanyService: UserCompanyService,
     private toastService: ToastService,
+    private queryClient: QueryClient, 
+    private cdr: ChangeDetectorRef, // Importer
     @Inject(NZ_MODAL_DATA) public data: any
   ) {}
 
   ngOnInit(): void {
     this.user = this.data.user;
-    this.loadCompanies();
+    setTimeout(() => {
+      this.loadCompanies();
+    }, 500); // Délai en millisecondesbv 
   }
 
   ngOnDestroy(): void {
@@ -68,38 +82,56 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
 
   loadCompanies() {
     this.isLoading = true;
-    this.companiesSubscription = this.companyService.getAllCompanies().subscribe({
-      next: (response: any) => {
-        this.companies = response.companies || [];
-        this.filteredCompanies = [...this.companies];
-        this.toastService.showSuccess('Liste des entreprises chargée avec succès.');
-        this.loadUserCompanies();
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des entreprises', error);
+    const queryObserver = new QueryObserver<Company[]>(this.queryClient, {
+      queryKey: ['companies'],
+      queryFn: async () => {
+        return await firstValueFrom(this.companyService.getAllCompanies());
+      }
+    });
+
+
+    queryObserver.subscribe((response:any) => {
+      if (response.error) {
+        this.isError = true;
+        console.error('Error fetching  companies:', response.error);
         this.toastService.showError('Impossible de charger les entreprises.');
         this.companies = [];
         this.filteredCompanies = [];
         this.isLoading = false;
+      }else if (response.data) {
+        this.companies = response.data.companies || [];
+        this.filteredCompanies = [...this.companies];
+        this.toastService.showSuccess('Liste des entreprises chargée avec succès.');
+        this.loadUserCompanies();
+        this.isError = false;
+        this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
   loadUserCompanies() {
     this.isLoadingCompanies = true;
-    this.userCompaniesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
-      .subscribe({
-        next: (companies) => {
-          this.userCompanies = companies;
-          this.preSelectUserCompanies(); // Pré-sélectionne après chargement
-          this.isLoadingCompanies = false;
-        },
-        error: (error) => {
-          console.error('Erreur lors du chargement des entreprises associées', error);
+    const queryObserver = new QueryObserver<Company[]>(this.queryClient, {
+      queryKey: ['userCompanies', this.user.id],
+      queryFn: async () => {
+        return await firstValueFrom(this.userCompanyService.getAllCompanyForUser(this.user.id));
+      }
+    });
+
+
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        console.error('Erreur lors du chargement des entreprises associées', result.error);
           this.toastService.showError('Impossible de charger les entreprises associées.');
           this.isLoadingCompanies = false;
-        }
-      });
+      } else {
+        this.userCompanies = result.data || [];
+        this.preSelectUserCompanies(); // Pré-sélectionne après chargement
+        this.isLoadingCompanies = false;
+      }
+    });
+
   }
 
   preSelectUserCompanies() {

@@ -42,7 +42,6 @@ export class UserDetailsModalComponent implements OnInit {
   companies: any = [];
   isLoading = true;
   isError = false;
-  isLoading$ = new BehaviorSubject<boolean>(false);
 
   
   constructor(
@@ -58,7 +57,7 @@ export class UserDetailsModalComponent implements OnInit {
   ngOnInit(): void {
     setTimeout(() => {
       this.loadUserCompanies();
-    }, 10000); // Délai en millisecondesbv      
+    }, 500); // Délai en millisecondesbv      
   }
   
   loadUserCompanies(): void {
@@ -78,6 +77,7 @@ export class UserDetailsModalComponent implements OnInit {
         this.companies = result.data || [];
         this.isError = false;
         this.isLoading = result.isFetching;
+
       }
     });
     

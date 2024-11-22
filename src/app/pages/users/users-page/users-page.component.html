@@ -2,6 +2,7 @@
     <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un utilisateur</button>
   
     <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Recherche par prénom" [(ngModel)]="searchUserName" (ngModelChange)="onSearchChange()" />
     <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail"   (ngModelChange)="onSearchChange()" />
     <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" (ngModelChange)="onSearchChange()" />
   </div>
@@ -24,7 +25,7 @@
 
 
 
-  
+    
   <nz-table
     #basicTable
     [nzData]="filteredUsers"
@@ -37,6 +38,7 @@
     (nzPageIndexChange)="onPageIndexChange($event)"
     (nzPageSizeChange)="onPageSizeChange($event)"
   >
+  
     <thead>
       <tr>
         <th>Nom</th>
@@ -48,6 +50,9 @@
     </thead>
   
     <tbody>
+      <nz-spin *ngIf="isLoading " nzSimple class="ml-3"></nz-spin>
+    
+      <ng-container *ngIf="!isLoading && !isError && filteredUsers.length > 0" class="space-y-4">
       <ng-container *ngFor="let user of filteredUsers">
         <tr>
           <td>{{ user.name }} </td>
@@ -82,7 +87,7 @@
             </button>
   
             <!-- Icône pour "Modifier" -->
-            <button nz-button nzType="link" (click)="editUser(user)">
+            <button nz-button nzType="link" (click)="openUserCreateModal(user)">
               <i nz-icon nzType="edit" nzTheme="outline"></i>
             </button>
             
@@ -105,6 +110,7 @@
         </tr>
         
       </ng-container>
+    </ng-container>
     </tbody>
   </nz-table>
   

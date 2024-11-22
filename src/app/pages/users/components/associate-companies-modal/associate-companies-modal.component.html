@@ -24,7 +24,9 @@ class="company-list"
 nzBordered
 nzItemLayout="horizontal"
 >
-<ng-container *ngFor="let company of filteredCompanies">
+<nz-spin *ngIf="isLoading " nzSimple class="ml-3"></nz-spin>
+<ng-container *ngIf="!isLoading && !isError && filteredCompanies.length > 0 ">
+<ng-container *ngFor="let company of filteredCompanies" >
   <nz-list-item>
     <label class="company-item">
       <input
@@ -35,6 +37,7 @@ nzItemLayout="horizontal"
       <span class="company-name">{{ company?.name }}</span>
     </label>
   </nz-list-item>
+</ng-container>
 </ng-container>
 </nz-list>
 

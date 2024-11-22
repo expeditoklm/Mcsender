@@ -467,6 +467,9 @@ aide moi a reprendre mon composant a partir de mon service :
 
 
 
+voici mon composant createuser page qui creer les users que 
+javais fais statiquement sans api maintenant que jai fait mon api : (le composant page angular)
+aide moi a reprendre mon composant a partir de mon service : 
 
 
 
@@ -497,16 +500,6 @@ aide moi a reprendre mon composant a partir de mon service :
 
 
 
-this.companiesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
-      .subscribe({
-        next: (companies) => {
-          this.userCompanies = companies;
-          this.isLoadingCompanies = false;
-        },
-        error: () => {
-          this.isLoadingCompanies = false;
-        }
-      });
 
 
 
@@ -647,175 +640,93 @@ this.companiesSubscription = this.userCompanyService.getAllCompanyForUser(this.u
 
 
 
-      import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NzInputGroupComponent } from 'ng-zorro-antd/input';
-import { NzListComponent, NzListItemComponent } from 'ng-zorro-antd/list';
-import { NZ_MODAL_DATA, NzModalComponent, NzModalRef } from 'ng-zorro-antd/modal';
-import { CompanyService } from '../../services/company.service';
-import { UserCompanyService } from '../../services/userCompany.service';
-import { NzTagComponent } from 'ng-zorro-antd/tag';
-import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { Subscription } from 'rxjs';
-import { NzSpinComponent } from 'ng-zorro-antd/spin';
-import { NzInputModule } from 'ng-zorro-antd/input';
 
-export interface AssociateUserToCompaniesDto {
-  userId: number;
-  companyIds: number[];
-}
+
+
+
+
+
+
+
+import { Component, Input } from '@angular/core';
+import { NzModalRef } from 'ng-zorro-antd/modal';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzStepsModule } from 'ng-zorro-antd/steps';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { User } from '../../models/user';
+import { UserService } from '../../services/user.service';
 
 @Component({
-  selector: 'app-associate-companies-modal',
+  selector: 'app-user-create',
   standalone: true,
+  templateUrl: './user-create.component.html',
   imports: [
-    CommonModule,
-    NzModalComponent,
-    NzInputGroupComponent,
-    NzListComponent,
-    FormsModule,
     ReactiveFormsModule,
-    NzListItemComponent,
-    NzTagComponent,
+    FormsModule,
+    CommonModule,
     NzButtonModule,
-    NzIconModule,
-    NzSpinComponent
-  ],
-  templateUrl: './associate-companies-modal.component.html',
-  styleUrl: './associate-companies-modal.component.css'
+    NzInputModule,
+    NzStepsModule,
+    NzFormModule,
+    NzGridModule,
+    NzOptionComponent,
+    NzSelectComponent
+  ]
 })
-export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
-  @Input() user: any;
-  @Output() companiesSelected = new EventEmitter<{ user: any, selectedCompanies: any[] }>();
+export class UserCreateComponent {
+  @Input() userData: any;
 
-  searchQuery: string = '';
-  companies: any[] = [];
-  filteredCompanies: any[] = [];
-  selectedCompanies: any[] = [];
-  userCompanies: any[] = [];
-  isLoading: boolean = false;
-  isLoadingCompanies: boolean = false;
-  private companiesSubscription: Subscription | null = null;
-  private userCompaniesSubscription: Subscription | null = null;
+  formData: User = {
+    name: '',
+    username: '',
+    email: '',
+    role: '',
+    password: '',
+  };
+
+  isSubmitting: boolean = false;
 
   constructor(
     private modal: NzModalRef,
-    private companyService: CompanyService,
-    private userCompanyService: UserCompanyService,
-    @Inject(NZ_MODAL_DATA) public data: any
+    private userService: UserService
   ) {}
 
   ngOnInit(): void {
-    this.user = this.data.user;
-    this.loadCompanies();
+    if (this.userData) {
+      this.formData = {
+        ...this.formData,
+        ...this.userData,
+      };
+    }
   }
 
-  ngOnDestroy(): void {
-    this.companiesSubscription?.unsubscribe();
-    this.userCompaniesSubscription?.unsubscribe();
-  }
+  submitForm(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+    this.isSubmitting = true;
 
-  loadCompanies() {
-    this.isLoading = true;
-    this.companiesSubscription = this.companyService.getAllCompanies().subscribe({
-      next: (response: any) => {
-        this.companies = response.companies || [];
-        this.filteredCompanies = [...this.companies];
-        this.loadUserCompanies();
+    console.log('Form Data:', this.formData);
+    this.userService.create(this.formData).subscribe({
+      next: (response) => {
+        console.log('User created successfully:', response);
+        this.modal.destroy(this.formData);
+        this.isSubmitting = false;
       },
       error: (error) => {
-        console.error('Erreur lors du chargement des entreprises', error);
-        this.companies = [];
-        this.filteredCompanies = [];
-        this.isLoading = false;
+        console.error('Error creating user:', error);
+        this.isSubmitting = false;
       }
     });
   }
 
-  loadUserCompanies() {
-    this.isLoadingCompanies = true;
-    this.userCompaniesSubscription = this.userCompanyService.getAllCompanyForUser(this.user.id)
-      .subscribe({
-        next: (companies) => {
-          this.userCompanies = companies;
-          this.preSelectUserCompanies(); // Pré-sélectionne après chargement
-          this.isLoadingCompanies = false;
-        },
-        error: () => {
-          this.isLoadingCompanies = false;
-        }
-      });
-  }
-  
-
-  preSelectUserCompanies() {
-    if (this.companies.length > 0 && this.userCompanies.length > 0) {
-      const userCompanyIds = this.userCompanies.map((uc: any) =>
-        typeof uc === 'number' ? uc : uc.id
-      );
-  
-      // Ajouter les entreprises correspondantes à `selectedCompanies`
-      this.selectedCompanies = this.companies.filter((company: any) =>
-        userCompanyIds.includes(company.id)
-      );
-    }
-  }
-  
-  searchCompanies() {
-    this.filteredCompanies = this.searchQuery
-      ? this.companies.filter((company) =>
-          company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-        )
-      : this.companies;
-  }
-
-  toggleCompanySelection(company: any) {
-    const index = this.selectedCompanies.findIndex(c => c.id === company.id);
-    if (index === -1) {
-      this.selectedCompanies.push(company);
-    } else {
-      this.selectedCompanies.splice(index, 1);
-    }
-  }
-
-  isSelected(company: any): boolean {
-    return this.userCompanies.some((c: any) => c.id === company.id);
-  }
-  
-  removeCompany(company: any) {
-    this.selectedCompanies = this.selectedCompanies.filter(c => c.id !== company.id);
-  }
-
-  submit() {
-    if (this.selectedCompanies.length > 0) {
-      const dto: AssociateUserToCompaniesDto = {
-        userId: this.user.id,
-        companyIds: this.selectedCompanies.map(company => company.id)
-      };
-  
-      this.isLoading = true;
-      this.userCompanyService.associateUserToCompanies(dto).subscribe({
-        next: (response) => {
-          this.companiesSelected.emit({
-            user: this.user,
-            selectedCompanies: this.selectedCompanies,
-          });
-          this.modal.close();
-        },
-        error: (error) => {
-          console.error('Erreur lors de l\'association des entreprises', error);
-          this.isLoading = false;
-        }
-      });
-    } else {
-      this.modal.close();
-    }
-  }
-
-  cancel() {
-    this.modal.close();
+  cancel(): void {
+    this.modal.destroy();
   }
 }
 
@@ -848,8 +759,22 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
 
 
 
+ formData : User = {
+  //   name: '',
+  //   username: '',
+  //   email: '',
+  //   role: '',
+  //   password: '',
+  // };
 
 
+  formData : User = {
+    name: this.userData.name,
+    username: this.userData.name,
+    email: this.userData.name,
+    role: this.userData.name,
+    password: this.userData.name,
+  };
 
 
 
@@ -868,164 +793,19 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
 
 
 
+@Component({
+  selector: 'app-user-create',
+  standalone: true,
 
+  templateUrl: './user-create.component.html',
 
 
 
 
+  export class UserCreateComponent  {
 
+    https://demo.templatemonster.com/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="modal-header">
-  <h3 class="modal-title">Associer des entreprises à {{ user?.name }}</h3>
-</div>
-
-<div class="modal-body associate-modal-content">
-  <!-- Barre de recherche -->
-  <nz-input-group [nzSuffix]="suffixTemplate" class="search-bar">
-    <input
-      type="text"
-      nz-input
-      placeholder="Rechercher des entreprises"
-      [(ngModel)]="searchQuery"
-      (ngModelChange)="searchCompanies()"
-    />
-  </nz-input-group>
-  <ng-template #suffixTemplate>
-    <i nz-icon nzType="search" nzTheme="outline"></i>
-  </ng-template>
-
-  <!-- Liste des entreprises avec cases à cocher -->
-<nz-list
-class="company-list"
-[nzDataSource]="filteredCompanies"
-nzBordered
-nzItemLayout="horizontal"
->
-<ng-container *ngFor="let company of filteredCompanies">
-  <nz-list-item>
-    <label class="company-item">
-      <input
-        type="checkbox"
-        [checked]="isSelected(company)" 
-        (change)="toggleCompanySelection(company)"
-      />
-      <span class="company-name">{{ company?.name }}</span>
-    </label>
-  </nz-list-item>
-</ng-container>
-</nz-list>
-
-
-  <!-- Liste des entreprises sélectionnées -->
-  <div *ngIf="selectedCompanies.length > 0" class="selected-companies">
-    <h4>Entreprises sélectionnées :</h4>
-    <ul>
-      <li *ngFor="let company of selectedCompanies" class="selected-company-item">
-        {{ company?.name }}
-        <button nz-button nzType="link" (click)="removeCompany(company)" class="remove-btn">
-          <i nz-icon nzType="close" nzTheme="outline"></i> Supprimer
-        </button>
-      </li>
-    </ul>
-  </div>
-</div>
-
-<div class="modal-footer">
-  <button nz-button nzType="primary" (click)="submit()">Soumettre</button>
-  <button nz-button nzType="default" (click)="cancel()">Annuler</button>
-</div>
+    https://themes.getbootstrap.com/
+    
+    Modèle de site Web multipage Bootstrap 5 pour la finance et la banque
