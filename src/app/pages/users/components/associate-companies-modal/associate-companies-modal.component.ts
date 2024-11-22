@@ -63,10 +63,10 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
     private companyService: CompanyService,
     private userCompanyService: UserCompanyService,
     private toastService: ToastService,
-    private queryClient: QueryClient, 
+    private queryClient: QueryClient,
     private cdr: ChangeDetectorRef, // Importer
     @Inject(NZ_MODAL_DATA) public data: any
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.user = this.data.user;
@@ -89,8 +89,7 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
       }
     });
 
-
-    queryObserver.subscribe((response:any) => {
+    queryObserver.subscribe((response: any) => {
       if (response.error) {
         this.isError = true;
         console.error('Error fetching  companies:', response.error);
@@ -98,7 +97,7 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
         this.companies = [];
         this.filteredCompanies = [];
         this.isLoading = false;
-      }else if (response.data) {
+      } else if (response.data) {
         this.companies = response.data.companies || [];
         this.filteredCompanies = [...this.companies];
         this.toastService.showSuccess('Liste des entreprises chargée avec succès.');
@@ -119,19 +118,17 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
       }
     });
 
-
     queryObserver.subscribe((result) => {
       if (result.error) {
         console.error('Erreur lors du chargement des entreprises associées', result.error);
-          this.toastService.showError('Impossible de charger les entreprises associées.');
-          this.isLoadingCompanies = false;
+        this.toastService.showError('Impossible de charger les entreprises associées.');
+        this.isLoadingCompanies = false;
       } else {
         this.userCompanies = result.data || [];
         this.preSelectUserCompanies(); // Pré-sélectionne après chargement
         this.isLoadingCompanies = false;
       }
     });
-
   }
 
   preSelectUserCompanies() {
@@ -139,11 +136,9 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
       const userCompanyIds = this.userCompanies.map((uc: any) =>
         typeof uc === 'number' ? uc : uc.company_id
       );
-
       this.selectedCompanies = this.companies.filter((company: any) =>
         userCompanyIds.includes(company.id)
       );
-
       this.toastService.showSuccess(`${this.selectedCompanies.length} entreprises déjà associées pré-sélectionnées.`);
     }
   }
@@ -151,8 +146,8 @@ export class AssociateCompaniesModalComponent implements OnInit, OnDestroy {
   searchCompanies() {
     this.filteredCompanies = this.searchQuery
       ? this.companies.filter((company) =>
-          company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-        )
+        company.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      )
       : this.companies;
   }
 

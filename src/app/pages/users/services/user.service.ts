@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, Observable, retry, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../../users/models/user';
+import { CreateUserCompanyDto, UpdateUserCompanyDto } from '../models/UserCompanyDto';
 
 // Interfaces pour les DTOs
 export interface CreateUserDto {
@@ -17,13 +18,8 @@ export interface CreateUserDto {
 
 export interface UpdateUserDto extends Partial<CreateUserDto> {}
 
-export interface CreateUserCompanyDto {
-  user_id: number;
-  company_id: number;
-  isMember?: boolean;
-}
 
-export interface UpdateUserCompanyDto extends Partial<CreateUserCompanyDto> {}
+
 
 @Injectable({
   providedIn: 'root'

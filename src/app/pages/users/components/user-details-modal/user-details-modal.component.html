@@ -16,12 +16,18 @@
                 <div class="flex items-center">
                   <i nz-icon nzType="user" class="mr-3 text-blue-500"></i>
                   <strong class="text-gray-700 mr-2">Nom :</strong>
-                  <span class="text-gray-900">{{ user.name || 'Non renseigné' }}</span>
+                  <span class="text-gray-900">{{
+                    user.name || "Non renseigné"
+                  }}</span>
                 </div>
                 <div class="flex items-center">
                   <i nz-icon nzType="user" class="mr-3 text-blue-500"></i>
-                  <strong class="text-gray-700 mr-2">Nom d'utilisateur :</strong>
-                  <span class="text-gray-900">{{ user.username || 'Non renseigné' }}</span>
+                  <strong class="text-gray-700 mr-2"
+                    >Nom d'utilisateur :</strong
+                  >
+                  <span class="text-gray-900">{{
+                    user.username || "Non renseigné"
+                  }}</span>
                 </div>
               </div>
               <!-- Colonne 2 -->
@@ -29,7 +35,9 @@
                 <div class="flex items-center">
                   <i nz-icon nzType="mail" class="mr-3 text-blue-500"></i>
                   <strong class="text-gray-700 mr-2">Email :</strong>
-                  <span class="text-gray-900">{{ user.email || 'Non renseigné' }}</span>
+                  <span class="text-gray-900">{{
+                    user.email || "Non renseigné"
+                  }}</span>
                 </div>
                 <div class="flex items-center">
                   <i nz-icon nzType="tags" class="mr-3 text-blue-500"></i>
@@ -38,7 +46,7 @@
                     [nzColor]="getRoleColor(user.role)"
                     class="font-semibold"
                   >
-                    {{ user.role || 'Non défini' }}
+                    {{ user.role || "Non défini" }}
                   </nz-tag>
                 </div>
               </div>
@@ -51,9 +59,12 @@
             <h3 class="text-xl font-semibold mb-4 flex items-center">
               <i nz-icon nzType="apartment" class="mr-3 text-blue-500"></i>
               Entreprises de {{ user.name }}
-              <nz-spin *ngIf="isLoading " nzSimple class="ml-3"></nz-spin>
+              <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
             </h3>
-            <div *ngIf="!isLoading && !isError && companies.length > 0" class="space-y-4">
+            <div
+              *ngIf="!isLoading && !isError && companies.length > 0"
+              class="space-y-4"
+            >
               <!-- <pre *ngIf="!isLoading">{{ companies | json }}</pre> -->
 
               <nz-card
@@ -62,31 +73,41 @@
               >
                 <div class="flex justify-between items-center">
                   <div>
-                    <strong class="text-lg text-gray-800">{{  company.company.name}}</strong>
+                    <strong class="text-lg text-gray-800">{{
+                      company.company.name
+                    }}</strong>
                     <p class="text-gray-500 text-sm mt-1">
-                      {{ company.company.description || 'Description non renseignée' }}
+                      {{
+                        company.company.description ||
+                          "Description non renseignée"
+                      }}
                     </p>
                   </div>
                   <nz-tag
                     [nzColor]="company.isMember ? 'success' : 'warning'"
                     class="font-semibold"
                   >
-                    {{ company.isMember ? 'Membre' : 'Invité' }}
+                    {{ company.isMember ? "Membre" : "Invité" }}
                   </nz-tag>
                 </div>
               </nz-card>
             </div>
-            
-            <div *ngIf="!isLoading && !isError && companies.length === 0" class="text-center text-gray-500 bg-gray-100 p-6 rounded-lg">
+
+            <div
+              *ngIf="!isLoading && !isError && companies.length === 0"
+              class="text-center text-gray-500 bg-gray-100 p-6 rounded-lg"
+            >
               <i nz-icon nzType="info-circle" class="mr-2 text-blue-500"></i>
               Aucune entreprise associée
             </div>
-            
-            <div *ngIf="isError" class="text-center text-red-500 bg-red-100 p-6 rounded-lg">
+
+            <div
+              *ngIf="isError"
+              class="text-center text-red-500 bg-red-100 p-6 rounded-lg"
+            >
               <i nz-icon nzType="warning" class="mr-2"></i>
               Une erreur est survenue lors du chargement des entreprises.
             </div>
-            
           </div>
         </nz-tab>
       </nz-tabset>
@@ -94,12 +115,7 @@
   </ng-container>
   <!-- Boutons du modal -->
   <div *nzModalFooter>
-    <button
-      nz-button
-      nzType="default"
-      class="mr-2"
-      (click)="closeModal()"
-    >
+    <button nz-button nzType="default" class="mr-2" (click)="closeModal()">
       Fermer
     </button>
   </div>

@@ -1,130 +1,154 @@
 <div class="dashboard-actions">
-    <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un utilisateur</button>
-  
-    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()" />
-    <input nz-input placeholder="Recherche par prénom" [(ngModel)]="searchUserName" (ngModelChange)="onSearchChange()" />
-    <input nz-input placeholder="Recherche par email" [(ngModel)]="searchEmail"   (ngModelChange)="onSearchChange()" />
-    <input nz-input placeholder="Recherche par rôle" [(ngModel)]="searchRole" (ngModelChange)="onSearchChange()" />
-  </div>
-  
+  <button nz-button nzType="primary" (click)="openUserCreateModal()">
+    Ajouter un utilisateur
+  </button>
+
+  <input
+    nz-input
+    placeholder="Recherche par nom"
+    [(ngModel)]="searchName"
+    (ngModelChange)="onSearchChange()"
+  />
+  <input
+    nz-input
+    placeholder="Recherche par prénom"
+    [(ngModel)]="searchUserName"
+    (ngModelChange)="onSearchChange()"
+  />
 
 
 
+  <nz-select
+  id="role"
+  [(ngModel)]="searchRole"
+  nzPlaceHolder="Choisir un rôle"
+  (ngModelChange)="onSearchChange()"
+>
+  <nz-option *ngFor="let role of tabRoles" [nzValue]="role" [nzLabel]="role">
+    {{ getRoleLabel(role) }}
+  </nz-option>
+</nz-select>
 
 
+</div>
 
+<nz-table
+  #basicTable
+  [nzData]="filteredUsers"
+  [nzScroll]="{ x: '100%', y: '500px' }"
+  [nzBordered]="true"
+  [nzPageIndex]="pageIndex"
+  [nzPageSize]="pageSize"
+  [nzTotal]="total"
+  [nzShowPagination]="false"
+  (nzPageIndexChange)="onPageIndexChange($event)"
+  (nzPageSizeChange)="onPageSizeChange($event)"
+>
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Prénom</th>
+      <th>Email</th>
+      <th>Rôle</th>
+      <th>Action</th>
+    </tr>
+  </thead>
 
+  <tbody>
+    <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
 
-
-
-
-
-
-
-
-
-
-
-    
-  <nz-table
-    #basicTable
-    [nzData]="filteredUsers"
-    [nzScroll]="{ x: '100%', y: '500px' }"
-    [nzBordered]="true"
-    [nzPageIndex]="pageIndex"
-    [nzPageSize]="pageSize"
-    [nzTotal]="total"
-    [nzShowPagination]="false"
-    (nzPageIndexChange)="onPageIndexChange($event)"
-    (nzPageSizeChange)="onPageSizeChange($event)"
-  >
-  
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Email</th>
-        <th>Rôle</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-  
-    <tbody>
-      <nz-spin *ngIf="isLoading " nzSimple class="ml-3"></nz-spin>
-    
-      <ng-container *ngIf="!isLoading && !isError && filteredUsers.length > 0" class="space-y-4">
+    <ng-container
+      *ngIf="!isLoading && !isError && filteredUsers.length > 0"
+      class="space-y-4"
+    >
       <ng-container *ngFor="let user of filteredUsers">
         <tr>
-          <td>{{ user.name }} </td>
+          <td>{{ user.name }}</td>
           <td>{{ user.username }}</td>
           <td>{{ user.email }}</td>
           <td>
             <!-- Icône pour le rôle Admin -->
-            <span *ngIf="user.role === 'ADMIN'">
-              <i nz-icon nzType="user-delete" nzTheme="outline" style="color: #FF4D4F; padding-right: 5px;"></i>
+            <span *ngIf="user.role === roles.ADMIN">
+              <i
+                nz-icon
+                nzType="user-delete"
+                nzTheme="outline"
+                style="color: #ff4d4f; padding-right: 5px"
+              ></i>
               <span>Admin</span>
             </span>
-          
+
             <!-- Icône pour le rôle Super-Admin -->
-            <span *ngIf="user.role === 'SUPER-ADMIN'">
-              <i nz-icon nzType="crown" nzTheme="outline" style="color: #52C41A; padding-right: 5px;"></i>
+            <span *ngIf="user.role === roles.SUPER_ADMIN">
+              <i
+                nz-icon
+                nzType="crown"
+                nzTheme="outline"
+                style="color: #52c41a; padding-right: 5px"
+              ></i>
               <span>Super-Admin</span>
             </span>
-          
+
             <!-- Icône pour le rôle Utilisateur -->
-            <span *ngIf="user.role === 'USER'">
-              <i nz-icon nzType="user" nzTheme="outline" style="color: #1890FF; padding-right: 5px;"></i>
+            <span *ngIf="user.role === roles.USER">
+              <i
+                nz-icon
+                nzType="user"
+                nzTheme="outline"
+                style="color: #1890ff; padding-right: 5px"
+              ></i>
               <span>Utilisateur</span>
             </span>
           </td>
-          
-         
+
           <td class="action-icons">
-         
             <!-- Icône pour "Voir en détail" -->
             <button nz-button nzType="link" (click)="viewDetailsUser(user)">
               <i nz-icon nzType="eye" nzTheme="outline"></i>
             </button>
-  
+
             <!-- Icône pour "Modifier" -->
             <button nz-button nzType="link" (click)="openUserCreateModal(user)">
               <i nz-icon nzType="edit" nzTheme="outline"></i>
             </button>
-            
+
             <!-- Icône pour "Supprimer" -->
-            <button nz-button nzType="link" nzDanger (click)="openDeleteModal(user)">
+            <button
+              nz-button
+              nzType="link"
+              nzDanger
+              (click)="openDeleteModal(user)"
+            >
               <i nz-icon nzType="delete" nzTheme="outline"></i>
             </button>
 
-
             <!-- Icône pour "Associer des entreprises" -->
-  <button nz-button nzType="link" (click)="openAssociateCompaniesModal(user)">
-    <i nz-icon nzType="team" nzTheme="outline" style="color: #1890FF;"></i>
-  </button>
-            
-
+            <button
+              nz-button
+              nzType="link"
+              (click)="openAssociateCompaniesModal(user)"
+            >
+              <i
+                nz-icon
+                nzType="team"
+                nzTheme="outline"
+                style="color: #1890ff"
+              ></i>
+            </button>
           </td>
-
-       
-
         </tr>
-        
       </ng-container>
     </ng-container>
-    </tbody>
-  </nz-table>
-  
-  
-  
-  
-  <!-- Ajoutez un conteneur pour espacer la pagination -->
-  <div class="pagination-container">
-    <nz-pagination
-      [(nzPageIndex)]="pageIndex"
-      [nzTotal]="total"
-      [nzPageSize]="pageSize"
-      (nzPageIndexChange)="onPageIndexChange($event)"
-      (nzPageSizeChange)="onPageSizeChange($event)"
-    ></nz-pagination>
-  </div>
-  
+  </tbody>
+</nz-table>
+
+<!-- Ajoutez un conteneur pour espacer la pagination -->
+<div class="pagination-container">
+  <nz-pagination
+    [(nzPageIndex)]="pageIndex"
+    [nzTotal]="total"
+    [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  ></nz-pagination>
+</div>

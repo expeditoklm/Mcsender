@@ -43,12 +43,11 @@ export class UserDetailsModalComponent implements OnInit {
   isLoading = true;
   isError = false;
 
-  
   constructor(
     private modalRef: NzModalRef,
     private userCompanyService: UserCompanyService,
     @Inject(NZ_MODAL_DATA) public data: { user: User },
-    private cdr: ChangeDetectorRef, // Importer
+    private cdr: ChangeDetectorRef, 
     private queryClient: QueryClient
   ) {
     this.user = data.user;
@@ -57,18 +56,18 @@ export class UserDetailsModalComponent implements OnInit {
   ngOnInit(): void {
     setTimeout(() => {
       this.loadUserCompanies();
-    }, 500); // Délai en millisecondesbv      
+    }, 500); 
   }
-  
+
   loadUserCompanies(): void {
-    this.isLoading = true; // Commencez le chargement
+    this.isLoading = true; 
     const queryObserver = new QueryObserver<Company[]>(this.queryClient, {
       queryKey: ['userCompanies', this.user.id],
       queryFn: async () => {
         return await firstValueFrom(this.userCompanyService.getAllCompanyForUser(this.user.id));
       }
     });
-  
+
     queryObserver.subscribe((result) => {
       if (result.error) {
         this.isError = true;
@@ -77,14 +76,9 @@ export class UserDetailsModalComponent implements OnInit {
         this.companies = result.data || [];
         this.isError = false;
         this.isLoading = result.isFetching;
-
       }
     });
-    
   }
-  
-  
-
 
   getRoleColor(role: string): string {
     switch (role.toLowerCase()) {
