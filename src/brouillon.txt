@@ -51,13 +51,6 @@ lister uniquement les contacts de laudience selectionner : preremplir les filtre
 
 
 
-
-
-
-
-
-
-
 redige moi le dto , le controlleur et le service pour gerer le CRUD
 
 Schemas prisma : (le model prisma et les models associée)
@@ -80,9 +73,6 @@ model User {
 
     @@map("users")
 }
-
-
-
 
 model UserCompany {
     id         Int      @id @default(autoincrement())
@@ -203,9 +193,7 @@ export class TemplateController {
   }
 }
 
-
 service : (service exemplaire)
-
 
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -411,10 +399,6 @@ export class TemplateService {
   }
 }
 
-
-
-
-
 ------------------------------------------------------------------------------------------------
 
 
@@ -445,15 +429,16 @@ export class UserService {
 //     return this.http.post(this.registerUrl, userDto, { headers });
 //   }
 
+create(createUserDto: CreateUserDto): Observable<User> {
+    return this.http.post<User>(this.baseUrl, createUserDto, { headers: this.headers })
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      );
+  }
+
 } 
-. voici mon controlleur nest js : (service generer)
-
-
-
-
-
-
-
+. voici mon controlleur nest js : (controlleur generer)
 
 --------------------------------------------------------------------------------------
 
@@ -463,186 +448,28 @@ javais fais statiquement sans api maintenant que jai fait mon api : (le composan
 aide moi a reprendre mon composant a partir de mon service : 
 
 
-
-
-
-
-voici mon composant createuser page qui creer les users que 
+voici mon composant create user page qui creer les users que 
 javais fais statiquement sans api maintenant que jai fait mon api : (le composant page angular)
 aide moi a reprendre mon composant a partir de mon service : 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      https://temp-mail.org/fr/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+comment jai fais pour les intercepteur
+
+au niveau front :  
+  creer un fichier intercepteur + con
+  figurer l'intercepteur dans le fichier app.config.ts 
+  ( c'est a dire reecrir lancient configuration de provideHttpClient() ) 
+
+au niveau back :
+  jai creer un middleware pour regarder toutes les entente des requette 
+  et d'en loguer la clé authorization + 
+  jai configurer le middleware dans le fichier app.module.ts +
+  verifier si jai bien ecrit la methode login , 
+  le service JwtStrategy et bien le configurer dans auth module
 
 
 
 <pre *ngIf="!isLoading">{{ companies | json }}</pre>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -732,80 +559,310 @@ export class UserCreateComponent {
 
 
 
+https://epreuvesetcorriges.com/categories/benin/college/6eme/191-1er-trimestre-semestre?start=150
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- formData : User = {
-  //   name: '',
-  //   username: '',
-  //   email: '',
-  //   role: '',
-  //   password: '',
-  // };
-
-
-  formData : User = {
-    name: this.userData.name,
-    username: this.userData.name,
-    email: this.userData.name,
-    role: this.userData.name,
-    password: this.userData.name,
-  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component } from '@angular/core';
+import { FormsModule, Validators } from '@angular/forms';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { Company } from '../models/company';
+import { debounceTime, Subject } from 'rxjs';
+import { CompanyCreateComponent } from '../components/company-create/company-create.component';
+import { CompanyDetailsModalComponent } from '../components/company-details-modal/company-details-modal.component';
+import { Router } from '@angular/router';
+import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
+import { ToastService } from '../../../consts/components/toast/toast.service';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
-  selector: 'app-user-create',
+  selector: 'app-companies-page',
   standalone: true,
+  imports: [
+    CommonModule,
+    NzTableModule,
+    NzModalModule,
+    NzButtonModule,
+    NzInputModule,
+    NzIconModule,
+    FormsModule,
+    NzPaginationModule,
+  ],
+  templateUrl: './companies-page.component.html',
+  styleUrl: './companies-page.component.css',
+})
+export class CompaniesPageComponent {
+  constructor(
+    private modalService: NzModalService,
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    private deleteModalService: DeleteModalService,
+    private toastService: ToastService,
+    private http: HttpClient
+  ) {}
 
-  templateUrl: './user-create.component.html',
+  toggleDetails(company: Company): void {
+    company.deleted = !company.deleted;
+  }
 
-
-
-
-  export class UserCreateComponent  {
-
-    https://demo.templatemonster.com/
-
-    https://themes.getbootstrap.com/
+  companies: Company[] = [
+    {
+      id: 1,
+      name: 'Tech Innovators',
+      description: 'Entreprise spécialisée dans les solutions technologiques.',
+      link_fb: 'https://facebook.com/techinnovators',
+      link_tiktok: 'https://tiktok.com/@techinnovators',
+      secondary_color: '#FF5733',
+      primary_color: '#1D8EB8',
+      tertiary_color: '#FFBD33',
+      phone: '+1234567890',
+      whatsapp: '+1234567890',
+      location: 'New York, USA',
+      link: 'https://www.techinnovators.com',
+      link_insta: 'https://instagram.com/techinnovators',
+      link_pinterest: 'https://pinterest.com/techinnovators',
+      link_twit: 'https://twitter.com/techinnovators',
+      link_youtube: 'https://youtube.com/techinnovators',
+      isActive: true,
+      deleted: false,
+    },
     
-    Modèle de site Web multipage Bootstrap 5 pour la finance et la banque
+    
+    {
+      id: 4,
+      name: 'Digital Marketing Pro',
+      description: 'Agence de marketing digital spécialisée en SEO.',
+      link_fb: 'https://facebook.com/digitalmarketingpro',
+      link_tiktok: 'https://tiktok.com/@digitalmarketingpro',
+      secondary_color: '#FF8800',
+      primary_color: '#0055AA',
+      tertiary_color: '#FFFFFF',
+      phone: '+9988776655',
+      whatsapp: '+9988776655',
+      location: 'Londres, Royaume-Uni',
+      link: 'https://www.digitalmarketingpro.com',
+      link_insta: 'https://instagram.com/digitalmarketingpro',
+      link_pinterest: 'https://pinterest.com/digitalmarketingpro',
+      link_twit: 'https://twitter.com/digitalmarketingpro',
+      link_youtube: 'https://youtube.com/digitalmarketingpro',
+      isActive: true,
+      deleted: false,
+    },
+    {
+      id: 5,
+      name: 'Startup Boosters',
+      description: 'Incubateur pour startups technologiques.',
+      link_fb: 'https://facebook.com/startupboosters',
+      link_tiktok: 'https://tiktok.com/@startupboosters',
+      secondary_color: '#FF4444',
+      primary_color: '#00C851',
+      tertiary_color: '#33B5E5',
+      phone: '+5566778899',
+      whatsapp: '+5566778899',
+      location: 'Berlin, Allemagne',
+      link: 'https://www.startupboosters.com',
+      link_insta: 'https://instagram.com/startupboosters',
+      link_pinterest: 'https://pinterest.com/startupboosters',
+      link_twit: 'https://twitter.com/startupboosters',
+      link_youtube: 'https://youtube.com/startupboosters',
+      isActive: true,
+      deleted: false,
+    },
+  ];
+
+  searchName = '';
+  searchDesc = '';
+  searchLocation = '';
+
+  pageIndex = 1;
+  pageSize = 5;
+  total = this.companies.length;
+  isModalVisible = false;
+  valide = true;
+  nonValide = false;
+
+  private searchSubject: Subject<void> = new Subject();
+  ngOnInit() {
+    this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
+      this.pageIndex = 1;
+      this.applyFilter();
+    });
+    this.applyFilter();
+  }
+
+  applyFilter(): void {
+    const isNotInCompanyRoute = this.router.url.includes(
+      '/dashboard/companies-not-confirm'
+    );
+    const isInCompanyRoute = this.router.url.includes('/dashboard/companies');
+
+    if (isNotInCompanyRoute) {
+      // Filtrer uniquement les utilisateurs qui ne sont pas dans l'entreprise
+      this.companies = this.companies.filter(
+        (company) => company.isActive == false
+      );
+    } else if (isInCompanyRoute) {
+      // Filtrer uniquement les utilisateurs qui sont dans l'entreprise
+      this.companies = this.companies.filter(
+        (company) => company.isActive === true
+      );
+    }
+
+    this.total = this.companies.length;
+  }
+  // Fonction de filtrage des utilisateurs
+  get filteredCompanies(): Company[] {
+    const filtered = this.companies.filter(
+      (company) =>
+        company.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
+        company.description
+          .toLowerCase()
+          .includes(this.searchDesc.toLowerCase()) &&
+        company.location
+          .toLowerCase()
+          .includes(this.searchLocation.toLowerCase())
+    );
+
+    this.total = filtered.length;
+    const start = (this.pageIndex - 1) * this.pageSize;
+    return filtered.slice(start, start + this.pageSize);
+  }
+  // Fonction de recherche qui émet un événement à chaque changement
+  onSearchChange(): void {
+    this.searchSubject.next();
+  }
+  // Changer la page
+  onPageIndexChange(pageIndex: number): void {
+    this.pageIndex = pageIndex;
+  }
+  // Changer la taille de la page
+  onPageSizeChange(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.pageIndex = 1; // Revenir à la première page lors du changement de taille
+  }
+  // fonction pour creer un company
+  openCompanyCreateModal(): void {
+    const modalRef = this.modalService.create({
+      nzTitle: 'Créer une entreprise',
+      nzContent: CompanyCreateComponent,
+      nzFooter: null,
+      nzWidth: '600px',
+    });
+
+    // Récupérer les données après la fermeture du modal
+    modalRef.afterClose.subscribe((result) => {
+      if (result) {
+        console.log('Données reçues du composant enfant :', result);
+        // Traitez les données reçues ici
+      }
+    });
+  }
+  // fonction pour voir un company
+  viewDetailsCompany(company: any): void {
+    this.modalService.create({
+      nzTitle: "Détails de l'utilisateur",
+      nzContent: CompanyDetailsModalComponent,
+      nzData: { company },
+      nzFooter: null,
+    });
+  }
+  // fonction pour la modification
+  editCompany(company: any): void {
+    console.log("Modifier l'utilisateur:", company);
+    // Ajouter votre logique pour modifier l'utilisateur
+  }
+
+  
+  // Ouvrir le modal avec des données spécifiques
+  openDeleteModal(company: any) {
+    const modalData = {
+      title: 'Supprimer cette entreprise ?',
+      message:
+        'Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible.',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+      callback: () => this.handleDelete(company.id),
+    };
+
+    this.deleteModalService.openModal(modalData); // Ouvrir le modal via le service
+  }
+
+  handleDelete(companyId: number): void {
+    //Logique de suppression via l'API
+
+    this.http
+      .delete(`https://api.example.com/companies/${companyId}`)
+      .subscribe({
+        next: () => {
+          console.log('Compagnie supprimée avec succès');
+          this.companies = this.companies.filter(
+            (company) => company.id !== companyId
+          );
+          let msg = 'La compagnie spprimer avec succes n0 :';
+          this.toastService.showSuccess(msg + companyId);
+        },
+        error: (err) => {
+          console.error('Erreur lors de la suppression de la compagnie', err);
+          this.toastService.showError(
+            'Erreur lors de la suppression de la compagnie.'
+          );
+        },
+      });
+  }
+}
+
+
+
+
+
+jai creer mes api en nest js .voici laspect de mon controlleur :
+ @UseGuards(AuthGuard('jwt'))
+    @Post()
+    @ApiOperation({ summary: 'Créer une nouvelle entreprise' })  // Résumé pour Swagger
+    @ApiBody({ description: 'Données pour créer une entreprise', type: CreateCompanyDto })  // Corps de la requête attendu
+    async create(@Body() createCompanyDto: CreateCompanyDto, @Req() request: Request) {
+        const userId = request.user['id'];
+        return this.companyService.create(createCompanyDto, userId);
+    }
+
+je suis entrain de coder le front end en angular 17: lorsque lutilisateur se connecte sur mon front jentegistre un token qui a ete envoyer par mon api lors du login dans le local storage .
+
+JE NARRIVE PAS A FAIS MA MES REQUETE DEPUIS LE FRONTEND VERS LE BACK SUR LAPI MAIS CA MET AUNAUTHORIZE .cOMMENT LUI DIRE QUE JE SUIS CONNECTER DANS LE FRONT END ET UTILISER LID DE LUTILISATEUR CONNECTER DANS LE FRONT END.
+
+ voici mon code pour le login dans lapi : async signIn(signInDto: SignInDto) {
+
+        const { email, password } = signInDto;
+        const user = await this.prismaService.user.findFirst({ where: { email: signInDto.email } });
+        if (!user) throw new ConflictException('User does not exist');
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+        const payload = {
+            id: user.id,
+            email: user.email
+        }
+        const token = this.jwtService.sign(payload, { expiresIn: '2h', secret: this.configService.get('SECRET_KEY') });
+        return {
+            token: token,
+            user: {
+                name: user.name,
+                userName: user.username,
+                email: user.email,
+            },
+            data: 'User signed in successfully'
+        }
+    }
+ aide moi a atteindre cette route  depuis mon front end: 
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post()
+    @ApiOperation({ summary: 'Créer une nouvelle entreprise' })  // Résumé pour Swagger
+    @ApiBody({ description: 'Données pour créer une entreprise', type: CreateCompanyDto })  // Corps de la requête attendu
+    async create(@Body() createCompanyDto: CreateCompanyDto, @Req() request: Request) {
+        const userId = request.user['id'];
+        return this.companyService.create(createCompanyDto, userId);
+    }

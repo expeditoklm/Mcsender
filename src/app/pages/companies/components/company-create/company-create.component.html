@@ -1,4 +1,4 @@
-<form [formGroup]="companpyForm" (ngSubmit)="onSubmit()" class="form-container">
+<form [formGroup]="companyForm" (ngSubmit)="onSubmit()" class="form-container">
     <nz-steps [nzCurrent]="currentStep" [nzSize]="'small'">
       <nz-step *ngFor="let step of stepsConfig" [nzTitle]="step.title"></nz-step>
     </nz-steps>
@@ -25,7 +25,7 @@
       <button nz-button type="button" (click)="next()" [disabled]="currentStep === stepsConfig.length - 1 || !isCurrentStepValid()" nzType="primary">
         Suivant <i nz-icon nzType="right"></i>
       </button>
-      <button nz-button type="submit" [disabled]="!companpyForm.valid" nzType="primary">Soumettre</button>
+      <button nz-button type="submit" [disabled]="!companyForm.valid" nzType="primary">Soumettre</button>
     </div>
   </form>
   

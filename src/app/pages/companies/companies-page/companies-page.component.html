@@ -2,9 +2,9 @@
     <!-- <button nz-button nzType="primary" (click)="openModal()">Ajouter</button> -->
     <button nz-button nzType="primary" (click)="openCompanyCreateModal()">Ajouter une entreprise</button>
   
-    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" />
-    <input nz-input placeholder="Recherche par description" [(ngModel)]="searchDesc" />
-    <input nz-input placeholder="Recherche par Localisation" [(ngModel)]="searchLocation" />
+    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()"/>
+    <input nz-input placeholder="Recherche par description" [(ngModel)]="searchDesc" (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Recherche par Localisation" [(ngModel)]="searchLocation" (ngModelChange)="onSearchChange()"  />
 
   </div>
   
@@ -34,6 +34,13 @@
     </thead>
   
     <tbody>
+      <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
+
+
+      <ng-container
+      *ngIf="!isLoading && !isError && filteredCompanies.length > 0"
+      class="space-y-4"
+    >
       <ng-container *ngFor="let company of filteredCompanies">
         <tr>
           <td>{{ company.name }}</td>
@@ -80,6 +87,7 @@
         </tr>
         
       </ng-container>
+    </ng-container>
     </tbody>
   </nz-table>
   

@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { NzModalRef } from 'ng-zorro-antd/modal';
+import { Component, Inject, Input, OnInit } from '@angular/core';
+import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
 import { ReactiveFormsModule, FormsModule, FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -8,6 +8,7 @@ import { NzStepsModule } from 'ng-zorro-antd/steps';
 import {  NzFormModule } from 'ng-zorro-antd/form';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { Company } from '../../models/company';
 
 
 @Component({
@@ -23,43 +24,21 @@ import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
   templateUrl: './company-create.component.html',
   styleUrl: './company-create.component.css'
 })
-export class CompanyCreateComponent {
- 
-  @Input() companyData: any; // Données initiales fournies par le parent
-  //@Input() stepsConfig: any; // Données initiales fournies par le parent
-
-  // formData : Company = {
-  //   name: "",
-  //   description: "",
-  //   link_fb: "",
-  //   link_tiktok: "",
-  //   secondary_color: "",
-  //   primary_color: "",
-  //   tertiary_color: "",
-  //   phone: "",
-  //   whatsapp: "",
-  //   location: "",
-  //   link: "",
-  //   link_insta: "",
-  //   link_pinterest: "",
-  //   link_twit: "",
-  //   link_youtube: "",
-  //   isActive: true,
-  // };
+export class CompanyCreateComponent  implements OnInit {
 
   currentStep = 0;
-  companpyForm!: FormGroup;
+  companyForm!: FormGroup;
 
   // Configuration des étapes
   stepsConfig = [
     {
       title: 'Info Base',
       controls: [
-        { name: 'name', placeholder: 'Nom de la société', validators: [Validators.required] },
-        { name: 'description', placeholder: 'Description', validators: [Validators.required] },
-        { name: 'phone', placeholder: 'Téléphone', validators: [Validators.required] },
-        { name: 'whatsapp', placeholder: 'WhatsApp', validators: [Validators.required] },
-        { name: 'location', placeholder: 'Localisation', validators: [Validators.required] }
+        { name: 'name', placeholder: 'Nom de la société', validators: [Validators.nullValidator] },
+        { name: 'description', placeholder: 'Description', validators: [Validators.nullValidator] },
+        { name: 'phone', placeholder: 'Téléphone', validators: [Validators.nullValidator] },
+        { name: 'whatsapp', placeholder: 'WhatsApp', validators: [Validators.nullValidator] },
+        { name: 'location', placeholder: 'Localisation', validators: [Validators.nullValidator] }
       ]
     },
     {
@@ -71,13 +50,13 @@ export class CompanyCreateComponent {
         { name: 'link_pinterest', placeholder: 'Lien Pinterest', validators: [] },
         { name: 'link_twit', placeholder: 'Lien Twitter', validators: [] },
         { name: 'link_youtube', placeholder: 'Lien YouTube', validators: [] },
-        { name: 'link', placeholder: 'Site Web', validators: [Validators.required] }
+        { name: 'link', placeholder: 'Site Web', validators: [Validators.nullValidator] }
       ]
     },
     {
       title: 'Couleurs ',
       controls: [
-        { name: 'primary_color', placeholder: 'Couleur principale', validators: [Validators.required] },
+        { name: 'primary_color', placeholder: 'Couleur principale', validators: [Validators.nullValidator] },
         { name: 'secondary_color', placeholder: 'Couleur secondaire', validators: [] },
         { name: 'tertiary_color', placeholder: 'Couleur tertiaire', validators: [] }
       ]
@@ -85,18 +64,50 @@ export class CompanyCreateComponent {
     {
       title: 'Statut',
       controls: [
-        { name: 'isActive', placeholder: 'Actif', validators: [Validators.required] },
+        { name: 'isActive', placeholder: 'Actif', validators: [Validators.nullValidator] },
         { name: 'deleted', placeholder: 'Supprimé', validators: [] }
       ]
     }
   ];
+ 
+  @Input() companyData: any; // Données initiales fournies par le parent
+  //@Input() stepsConfig: any; // Données initiales fournies par le parent
+
+  formData : Company = {
+    id: undefined,
+    name: "",
+    description: "",
+    link_fb: "",
+    link_tiktok: "",
+    secondary_color: "",
+    primary_color: "",
+    tertiary_color: "",
+    phone: "",
+    whatsapp: "",
+    location: "",
+    link: "",
+    link_insta: "",
+    link_pinterest: "",
+    link_twit: "",
+    link_youtube: "",
+    isActive: true,
+  };
   
   constructor(private fb: FormBuilder, private modalRef: NzModalRef,
+    @Inject(NZ_MODAL_DATA) public data: any
     
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
+    if (this.data.companyData) {
+      this.formData = {
+        ...this.formData,
+        ...this.data.companyData,
+      };
+    }
+     // Mettre à jour les valeurs du formulaire avec les données fournies
+     this.companyForm.patchValue(this.formData);
   }
 
   // Méthode pour initialiser le formulaire
@@ -110,13 +121,13 @@ export class CompanyCreateComponent {
       return acc;
     }, {} as { [key: string]: FormGroup });
   
-    this.companpyForm = this.fb.group(formGroups);
+    this.companyForm = this.fb.group(formGroups);
   }
   
 
   // Récupérer le FormGroup pour une étape donnée
   getFormGroup(index: number): FormGroup {
-    return this.companpyForm.get('step' + (index + 1)) as FormGroup;
+    return this.companyForm.get('step' + (index + 1)) as FormGroup;
   }
 
   // Récupérer les contrôles pour une étape donnée
@@ -143,16 +154,28 @@ export class CompanyCreateComponent {
     }
   }
 
+  flattenFormValues(formValues: any): any {
+    return Object.keys(formValues).reduce((acc, key) => {
+      return { ...acc, ...formValues[key] };
+    }, {});
+  }
+  
+
   // Soumettre le formulaire
   onSubmit(): void {
-    if (this.companpyForm.valid) {
-      console.log('Formulaire validé', this.companpyForm.value);
-      // Fermer le modal
-    this.modalRef.close();
+    if (this.companyForm.valid) {
+      // Fusionner les valeurs du formulaire avec formData
+      this.formData = { ...this.formData, ...this.flattenFormValues(this.companyForm.value) };
+      // console.log('Formulaire validé', this.companyForm.value);
+      // console.log('Données finales envoyées au parent :', this.formData);
+  
+      // Transmettre les données au composant parent via le modal
+      this.modalRef.destroy(this.formData);
     } else {
       console.log('Formulaire invalide');
     }
   }
+  
 
   
 }
