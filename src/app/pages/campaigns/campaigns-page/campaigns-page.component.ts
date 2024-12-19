@@ -4,19 +4,22 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, Subject, finalize, firstValueFrom } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
-import { User } from '../../users/models/user';
-import { UserCreateComponent } from '../../users/components/user-create/user-create.component';
-import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
-import { NzFormControlComponent, NzFormItemComponent, NzFormLabelComponent } from 'ng-zorro-antd/form';
-import { NzOptionComponent } from 'ng-zorro-antd/select';
 import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
-import { HttpClient } from '@angular/common/http';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzStepsModule } from 'ng-zorro-antd/steps';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { CampaignDto, CampaignStatus } from '../models/campaign';
+import { CampaignService } from '../services/campaign.service';
+import { CompanyService } from '../../companies/services/company.service';
+import { CampaignCreateComponent } from '../components/campaign-create/campaign-create.component';
 
 @Component({
   selector: 'app-campaigns-page',
@@ -31,15 +34,40 @@ import { HttpClient } from '@angular/common/http';
     NzIconModule,
     FormsModule,
     NzPaginationModule,
-    NzFormItemComponent,
-    NzFormLabelComponent,
-    NzFormControlComponent,
-    NzOptionComponent
+    NzSpinModule,
+    ReactiveFormsModule,
+    NzStepsModule,
+    NzStepsModule,
+    NzFormModule,
+    NzGridModule,
   ],
+
   templateUrl: './campaigns-page.component.html',
-  styleUrl: './campaigns-page.component.css'
+  styleUrl: './campaigns-page.component.css',
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
-export class CampaignsPageComponent  implements OnInit {
+export class CampaignsPageComponent implements OnInit {
+  campaigns: CampaignDto[] = [];
+  filteredCampaigns: CampaignDto[] = [];
+  isLoading = false;
+  campaignStatus = CampaignStatus;
+  campaignStatuses = Object.values(CampaignStatus);
+  isError = false;
+  searchName = '';
+  searchStartDate = '';
+  searchEndDate = '';
+  searchCompany = '';
+  searchStatus = '';
+  pageIndex = 1;
+  pageSize = 5;
+  total = 0;
+  isModalVisible = false;
+  private searchSubject: Subject<void> = new Subject();
 
   constructor(
     private modalService: NzModalService,
@@ -47,123 +75,275 @@ export class CampaignsPageComponent  implements OnInit {
     private router: Router,
     private deleteModalService: DeleteModalService,
     private toastService: ToastService,
-    private http: HttpClient
+    private campaignService: CampaignService,
+    private companyService: CompanyService,
+
+    private queryClient: QueryClient
   ) {}
 
-  users: User[] = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'PENDING', username: '123-456', created_at: '2023-01-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'COMPLETED', username: '789-012', created_at: '2023-01-02' },
-    { id: 3, name: 'Michael Johnson', email: 'michael@example.com', role: 'CANCELLED', username: '987-654', created_at: '2023-01-03' },
-    { id: 4, name: 'Michael Johnson', email: 'michael@example.com', role: 'CANCELLED', username: '987-654', created_at: '2023-01-03' },
-    { id: 5, name: 'Michael Johnson', email: 'michael@example.com', role: 'COMPLETED', username: '987-654', created_at: '2023-01-03' }
-  ];
-
-  searchName = '';
-  searchEmail = '';
-  searchRole = '';
-
-  pageIndex = 1;
-  pageSize = 5;
-  total = this.users.length;
-  isModalVisible = false;
-  private searchSubject: Subject<void> = new Subject();
-
   ngOnInit() {
+    setTimeout(() => {
+      this.loadCampaigns();
+    }, 500); // Délai en millisecondesbv
+
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
-      // this.applyFilter();
+      this.filterCampaigns();
     });
-    //this.applyFilter();
   }
 
-  // Méthode pour filtrer les utilisateurs en fonction de la route actuelle
-  applyFilter(): void {
-    const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
-    const isInCompanyRoute = this.router.url.includes('/dashboard/users');
+  loadCampaigns() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['campaignsList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.campaignService.getAllCampaigns());
+      },
+    });
 
-    if (isNotInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui ne sont pas dans l'entreprise
-      this.users = this.users.filter(user => user.role !== 'Employee');
-    } else if (isInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui sont dans l'entreprise
-      this.users = this.users.filter(user => user.role === 'Employee');
-    }
-
-    this.total = this.users.length;
+    queryObserver.subscribe((result) => {
+      console.log('result', result.data);
+      if (result.error) {
+        this.isError = true;
+        console.error('Erreur lors du chargement des campagnes:', result.error);
+        this.toastService.showError('Erreur lors du chargement des campagnes.');
+      } else {
+        this.campaigns = result.data || [];
+        this.filterCampaigns();
+        this.isError = false;
+        this.isLoading = result.isFetching;
+      }
+    });
   }
 
-  // Fonction de recherche
+  filterCampaigns(): void {
+    let filtered = [...this.campaigns];
+
+    // Fonction asynchrone pour récupérer le nom de la compagnie
+    const fetchCompanyName = async (companyId: number): Promise<string> => {
+      try {
+        const company = await firstValueFrom(
+          this.companyService.getCompanyById(companyId)
+        );
+        return company?.name || '';
+      } catch (error) {
+        
+        console.error(
+          `Erreur lors de la récupération de la compagnie avec ID ${companyId}`,
+          error
+        );
+        return '';
+      }
+    };
+
+    // Appliquer les filtres
+    const filterAsync = async () => {
+      const promises = filtered.map(async (campaign) => {
+        const companyLib = await fetchCompanyName(campaign.company_id);
+
+        const name = campaign.name?.toLowerCase() || '';
+        const startDate = campaign.start_date?.toString().toLowerCase() || '';
+        const endDate = campaign.end_date?.toString().toLowerCase() || '';
+        const status = campaign.status?.toLowerCase() || '';
+
+        const matchesFilters =
+          name.includes(this.searchName.toLowerCase()) &&
+          startDate.includes(this.searchStartDate.toLowerCase()) &&
+          endDate.includes(this.searchEndDate.toLowerCase()) &&
+          companyLib.toLowerCase().includes(this.searchCompany.toLowerCase()) &&
+          status.includes(this.searchStatus.toLowerCase());
+
+        if (matchesFilters) {
+          return { ...campaign, companyLib }; // Ajoutez le nom de la compagnie
+        }
+
+        return null;
+      });
+
+      const filteredResults = await Promise.all(promises);
+      const finalFiltered = filteredResults.filter((result) => result !== null);
+
+      this.total = finalFiltered.length;
+
+      const start = (this.pageIndex - 1) * this.pageSize;
+      this.filteredCampaigns = finalFiltered.slice(
+        start,
+        start + this.pageSize
+      );
+      this.cdr.detectChanges(); // Nécessaire pour forcer Angular à re-rendre la vue
+    };
+
+    filterAsync().catch((error) =>
+      console.error('Erreur lors du filtrage des campagnes :', error)
+    );
+  }
+
   onSearchChange(): void {
     this.searchSubject.next();
   }
 
-  // Filtrage des utilisateurs
-  get filteredUsers(): User[] {
-    const filtered = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-      user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
-      user.role.toLowerCase().includes(this.searchRole.toLowerCase())
-    );
-
-    this.total = filtered.length;
-    const start = (this.pageIndex - 1) * this.pageSize;
-    return filtered.slice(start, start + this.pageSize);
-  }
-
-  // Pagination
   onPageIndexChange(pageIndex: number): void {
     this.pageIndex = pageIndex;
+    this.filterCampaigns();
   }
 
   onPageSizeChange(pageSize: number): void {
     this.pageSize = pageSize;
     this.pageIndex = 1;
+    this.filterCampaigns();
   }
 
-  // Création d'un utilisateur
-  openUserCreateModal(): void {
+  openCampaignCreateModal(campaignData?: any): void {
     const modalRef = this.modalService.create({
-      nzTitle: 'Créer un utilisateur',
-      nzContent: UserCreateComponent,
+      nzTitle: campaignData ? "Modifier la campagne" : 'Créer une campagne',
+      nzContent: CampaignCreateComponent,
       nzFooter: null,
       nzWidth: '600px',
+      nzData: {
+        campaignData: campaignData,
+        isEdit: !!campaignData,
+      },
     });
 
-    modalRef.afterClose.subscribe((result) => {
-      if (result) {
-        console.log('Données reçues :', result);
-        this.users.push(result); // Ajouter l'utilisateur créé
-        this.applyFilter(); // Réappliquer le filtre
+    modalRef.afterClose.subscribe((campaignDto) => {
+      if (campaignDto) {
+        const {
+          id,
+          created_at,
+          updated_at,
+          deleted,
+          password,
+          ...filteredCampaignDto
+        } = campaignDto;
+      
+        const operation = id
+          ? this.campaignService.updateCampaign(id, filteredCampaignDto)
+          : this.campaignService.createCampaign(filteredCampaignDto);
+
+        operation.subscribe({
+          next: (campaign) => {
+            if (campaignDto.id) {
+              // Mise à jour de l'utilisateur existant
+              const index = this.campaigns.findIndex((u) => u.id === campaign.id);
+              if (index !== -1) {
+                this.campaigns[index] = campaign;
+              }
+              this.toastService.showSuccess(
+                'Utilisateur mis à jour avec succès.'
+              );
+            } else {
+              // Création d'un nouvel utilisateur
+              this.campaigns.push(campaign);
+              this.toastService.showSuccess('Utilisateur créé avec succès.');
+            }
+            this.filterCampaigns();
+          },
+          error: (error) => {
+            console.error(
+              "Erreur lors de l'opération utilisateur:",
+              error.message
+            );
+            if (error.status === 409) {
+              this.toastService.showError(
+                'Un utilisateur avec cet email existe déjà.'
+              );
+            } else {
+              this.toastService.showError(error.message);
+            }
+          },
+        });
       }
     });
   }
 
-  // Afficher les détails d'un utilisateur
-  viewDetailsUser(user: any): void {
-    this.modalService.create({
-      nzTitle: 'Détails de l\'utilisateur',
-      nzContent: UserDetailsModalComponent,
-      nzData: { user },
-      nzFooter: null
-    });
+  viewDetailsCampagn(user: any): void {
+    // if (!user.id) {
+    //   this.toastService.showError('ID utilisateur non valide');
+    //   return;
+    // }
+
+    // this.userService.findOne(user.id).subscribe({
+    //   next: (userDetails) => {
+    //     this.modalService.create({
+    //       nzTitle: "Détails de l'utilisateur",
+    //       nzContent: UserDetailsModalComponent,
+    //       nzData: { user: userDetails },
+    //       nzFooter: null,
+    //     });
+    //   },
+    //   error: (error) => {
+    //     console.error('Erreur lors du chargement des détails:', error);
+    //     this.toastService.showError(
+    //       "Erreur lors du chargement des détails de l'utilisateur."
+    //     );
+    //   },
+    // });
   }
 
-  // Modifier un utilisateur
-  editUser(user: any): void {
-    console.log('Modifier l\'utilisateur:', user);
+  openDeleteModal(user: any) {
+    // if (!user.id) {
+    //   this.toastService.showError('ID utilisateur non valide');
+    //   return;
+    // }
+
+    // const modalData = {
+    //   title: 'Supprimer cet utilisateur ?',
+    //   message:
+    //     'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.',
+    //   confirmText: 'Confirmer',
+    //   cancelText: 'Annuler',
+    //   callback: () => this.handleDelete(user.id!), // Le '!' indique que nous sommes sûrs que l'id existe
+    // };
+
+    // this.deleteModalService.openModal(modalData);
   }
 
-  // Supprimer un utilisateur
-  deleteUser(user: any): void {
-    this.isModalVisible = true;
+  handleDelete(userId: number): void {
+    // this.userService.remove(userId).subscribe({
+    //   next: () => {
+    //     this.users = this.users.filter((user) => user.id !== userId);
+    //     this.filterUsers();
+    //     this.toastService.showSuccess(
+    //       `L'utilisateur a été supprimé avec succès.`
+    //     );
+    //   },
+    //   error: (error) => {
+    //     console.error("Erreur lors de la suppression de l'utilisateur:", error);
+    //     this.toastService.showError(
+    //       "Erreur lors de la suppression de l'utilisateur."
+    //     );
+    //   },
+    // });
   }
 
-  closeModal(): void {
-    this.isModalVisible = false;
+  openAssociateCompaniesModal(user: any): void {
+    // Vérification préalable de l'existence de l'id
+    // if (!user.id) {
+    //   this.toastService.showError('ID utilisateur non valide');
+    //   return;
+    // }
+
+    // const modalRef = this.modalService.create({
+    //   nzTitle: `Associer des entreprises à ${user.name}`,
+    //   nzContent: AssociateCompaniesModalComponent,
+    //   nzFooter: null,
+    //   nzWidth: '600px',
+    //   nzData: { user },
+    // });
+
+    // modalRef.afterClose.subscribe((result: { company_id: number }) => {
+    //   if (result && user.id) {
+    //     // Double vérification de user.id
+    //     const createUserCompanyDto: CreateUserCompanyDto = {
+    //       user_id: user.id,
+    //       company_id: result.company_id,
+    //     };
+    //   }
+    // });
   }
 
-  confirmDelete(): void {
-    console.log('Utilisateur supprimé');
-    this.closeModal();
+  ngOnDestroy() {
+    // Nettoyage du Subject pour éviter les fuites de mémoire
+    this.searchSubject.complete();
   }
 }

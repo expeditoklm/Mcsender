@@ -8,7 +8,6 @@ import { Company } from '../../models/company';
 import { QueryClient, QueryObserver } from '@tanstack/query-core';
 import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../../consts/components/toast/toast.service';
-import { HttpClient } from '@angular/common/http';
 import { CompanyService } from '../../services/company.service';
 
 @Component({
@@ -16,11 +15,16 @@ import { CompanyService } from '../../services/company.service';
   standalone: true,
   imports: [CommonModule, NzModalModule, NzButtonModule, NzIconModule,NzTabsModule
   ],
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
   templateUrl: './company-details-modal.component.html',
   styleUrl: './company-details-modal.component.css'
 })
 export class CompanyDetailsModalComponent  implements OnInit {
-  @Inject(NZ_MODAL_DATA) public data: any
 
   company: Company;
   isLoading = false;
@@ -30,17 +34,20 @@ export class CompanyDetailsModalComponent  implements OnInit {
     private modalRef: NzModalRef,
     private toastService: ToastService,
     private companyService: CompanyService,
-    private queryClient: QueryClient
+    private queryClient: QueryClient,
+    @Inject(NZ_MODAL_DATA) public data: { company: any },
+
   ) {
     // Initialiser la variable company avec les données reçues
-    console.log('Données reçues dans le modal :', this.data);
+    //console.log('Données reçues dans le modal maintenant :', this.data);
     this.company = this.data?.company || {};  // S'assurer que company est défini, même s'il est vide
-    console.log('maintenant :', this.company);
+    //console.log('maintenant :', this.company);
 
   }
   ngOnInit(): void {
     setTimeout(() => {
       this.loadCompany();
+      console.log( this.loadCompany());
     }, 500); 
   }
 
@@ -49,7 +56,7 @@ export class CompanyDetailsModalComponent  implements OnInit {
     const queryObserver = new QueryObserver<any>(this.queryClient, {
       queryKey: ['companyData'],
       queryFn: async () => {
-        return await firstValueFrom(this.companyService.getCompanyById( this.data?.id ));
+        return await firstValueFrom(this.companyService.getCompanyById( this.data?.company.id ));
       },
     });
 

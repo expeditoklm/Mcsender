@@ -1,43 +1,55 @@
 <div class="dashboard-actions">
-    <!-- <button nz-button nzType="primary" (click)="openModal()">Ajouter</button> -->
-    <button nz-button nzType="primary" (click)="openCompanyCreateModal()">Ajouter une entreprise</button>
-  
-    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()"/>
-    <input nz-input placeholder="Recherche par description" [(ngModel)]="searchDesc" (ngModelChange)="onSearchChange()" />
-    <input nz-input placeholder="Recherche par Localisation" [(ngModel)]="searchLocation" (ngModelChange)="onSearchChange()"  />
+  <!-- <button nz-button nzType="primary" (click)="openModal()">Ajouter</button> -->
+  <button nz-button nzType="primary" (click)="openCompanyCreateModal()">
+    Ajouter une entreprise
+  </button>
 
-  </div>
-  
+  <input
+    nz-input
+    placeholder="Recherche par nom"
+    [(ngModel)]="searchName"
+    (ngModelChange)="onSearchChange()"
+  />
+  <input
+    nz-input
+    placeholder="Recherche par description"
+    [(ngModel)]="searchDesc"
+    (ngModelChange)="onSearchChange()"
+  />
+  <input
+    nz-input
+    placeholder="Recherche par Localisation"
+    [(ngModel)]="searchLocation"
+    (ngModelChange)="onSearchChange()"
+  />
+</div>
 
-  
-  
-  <nz-table
-    #basicTable
-    [nzData]="filteredCompanies"
-    [nzScroll]="{ x: '100%', y: '500px' }"
-    [nzBordered]="true"
-    [nzPageIndex]="pageIndex"
-    [nzPageSize]="pageSize"
-    [nzTotal]="total"
-    [nzShowPagination]="false"
-    (nzPageIndexChange)="onPageIndexChange($event)"
-    (nzPageSizeChange)="onPageSizeChange($event)"
-  >
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Description</th>
-        <th>Télephone</th>
-        <th>Localisation</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-  
-    <tbody>
-      <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
+<nz-table
+  #basicTable
+  [nzData]="filteredCompanies"
+  [nzScroll]="{ x: '100%', y: '500px' }"
+  [nzBordered]="true"
+  [nzPageIndex]="pageIndex"
+  [nzPageSize]="pageSize"
+  [nzTotal]="total"
+  [nzShowPagination]="false"
+  (nzPageIndexChange)="onPageIndexChange($event)"
+  (nzPageSizeChange)="onPageSizeChange($event)"
+>
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Description</th>
+      <th>Télephone</th>
+      <th>Localisation</th>
+      <th>Action</th>
+    </tr>
+  </thead>
 
+  <tbody>
+    <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
 
-      <ng-container
+    <ng-container
       *ngIf="!isLoading && !isError && filteredCompanies.length > 0"
       class="space-y-4"
     >
@@ -47,61 +59,103 @@
           <td>{{ company.description }}</td>
           <td>{{ company.phone }}</td>
           <td>{{ company.location }}</td>
-         
-          <td class="action-icons">
 
-            <button nz-button nzType="link" (click)="toggleDetails(company)">
-              <i nz-icon [nzType]="company.deleted ? 'up' : 'down'" nzTheme="outline"></i>
+          <td class="action-icons">
+            <button nz-button nzType="link" (click)="toggleDetails(company.id)">
+              <i
+                nz-icon
+                [nzType]="isExpanded(company.id) ? 'up' : 'down'"
+                nzTheme="outline"
+              ></i>
             </button>
-         
+
             <!-- Icône pour "Voir en détail" -->
-            <button nz-button nzType="link" (click)="viewDetailsCompany(company)">
+            <button
+              nz-button
+              nzType="link"
+              (click)="viewDetailsCompany(company)"
+            >
               <i nz-icon nzType="eye" nzTheme="outline"></i>
             </button>
-  
+
             <!-- Icône pour "Modifier" -->
-            <button nz-button nzType="link" (click)="editCompany(company)">
+            <button nz-button nzType="link" (click)="openCompanyCreateModal(company)">
               <i nz-icon nzType="edit" nzTheme="outline"></i>
             </button>
-            
+
             <!-- Icône pour "Supprimer" -->
-            <button nz-button nzType="link" nzDanger (click)="openDeleteModal(company)">
+            <button
+              nz-button
+              nzType="link"
+              nzDanger
+              (click)="openDeleteModal(company)"
+            >
               <i nz-icon nzType="delete" nzTheme="outline"></i>
             </button>
-           
           </td>
         </tr>
-
-        <tr *ngIf="company.deleted">
-         
+        <tr *ngIf="isExpanded(company.id)">
           <td colspan="10" class="company-details">
-            <p><strong>Les membres de l'entreprise {{ company.name }}</strong></p>
-            <ol>
-               <!-- Boucler sur les differents users que contient ce entreprise -->
-              <!-- <button nz-button nzType="link" (click)="viewDetailsUser(user)">
-                <li><p>oklm bro</p></li>
-              </button> -->
-               <!-- crrer un bouton icone supprier devant chaque utilisateur  -->
+            <p>
+              <strong>Les membres de l'entreprise {{ company.name }}</strong>
+            </p>
+            <!-- Vérifier si la liste des utilisateurs est vide -->
+            <div
+              *ngIf="
+                !company.userCompanies || company.userCompanies.length === 0
+              "
+            >
+              <p class="no-users-message">
+                Aucun utilisateur n'est associé à cette entreprise.
+              </p>
+            </div>
+            <!-- Afficher la liste des utilisateurs si elle n'est pas vide -->
+            <ol
+              *ngIf="company.userCompanies && company.userCompanies.length > 0"
+            >
+              <li *ngFor="let userCompany of company.userCompanies">
+                <span>{{
+                  userCompany.user.name || "Utilisateur inconnu"
+                }}</span>
+                <!-- Bouton pour afficher les détails de l'utilisateur -->
+                <button
+                  nz-button
+                  nzType="link"
+                  (click)="viewDetailsUser(userCompany.user)"
+                  [disabled]="!userCompany.user"
+                >
+                  Voir Détails
+                </button>
+                <!-- Bouton pour supprimer l'utilisateur de l'entreprise -->
+                <button
+                  nz-button
+                  nzType="dashed"
+                  (click)="
+                    openDeleteUserModal(
+                      userCompany.user_id,
+                      userCompany.company_id
+                    )
+                  "
+                  [disabled]="!userCompany.id"
+                >
+                  Supprimer
+                </button>
+              </li>
             </ol>
           </td>
         </tr>
-        
       </ng-container>
     </ng-container>
-    </tbody>
-  </nz-table>
-  
+  </tbody>
+</nz-table>
 
-  
-  
-  <!-- Ajoutez un conteneur pour espacer la pagination -->
-  <div class="pagination-container">
-    <nz-pagination
-      [(nzPageIndex)]="pageIndex"
-      [nzTotal]="total"
-      [nzPageSize]="pageSize"
-      (nzPageIndexChange)="onPageIndexChange($event)"
-      (nzPageSizeChange)="onPageSizeChange($event)"
-    ></nz-pagination>
-  </div>
-  
+<!-- Ajoutez un conteneur pour espacer la pagination -->
+<div class="pagination-container">
+  <nz-pagination
+    [(nzPageIndex)]="pageIndex"
+    [nzTotal]="total"
+    [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  ></nz-pagination>
+</div>

@@ -60,13 +60,6 @@ export class CompanyCreateComponent  implements OnInit {
         { name: 'secondary_color', placeholder: 'Couleur secondaire', validators: [] },
         { name: 'tertiary_color', placeholder: 'Couleur tertiaire', validators: [] }
       ]
-    },
-    {
-      title: 'Statut',
-      controls: [
-        { name: 'isActive', placeholder: 'Actif', validators: [Validators.nullValidator] },
-        { name: 'deleted', placeholder: 'Supprimé', validators: [] }
-      ]
     }
   ];
  
@@ -90,26 +83,52 @@ export class CompanyCreateComponent  implements OnInit {
     link_pinterest: "",
     link_twit: "",
     link_youtube: "",
-    isActive: true,
   };
   
   constructor(private fb: FormBuilder, private modalRef: NzModalRef,
     @Inject(NZ_MODAL_DATA) public data: any
     
-  ) {}
-
+  ) { }
+ 
   ngOnInit(): void {
+    // Initialisation du formulaire
     this.initializeForm();
+  
+    // Vérification et affectation des données de la modal
     if (this.data.companyData) {
+      // Remplir les données dans `formData` pour référence locale (si nécessaire)
       this.formData = {
         ...this.formData,
         ...this.data.companyData,
       };
+  
+      // Remplir le formulaire avec les données de `companyData`
+      this.companyForm.get('step1')?.patchValue({
+        name: this.data.companyData.name,
+        description: this.data.companyData.description,
+        phone: this.data.companyData.phone,
+        whatsapp: this.data.companyData.whatsapp,
+        location: this.data.companyData.location,
+      });
+  
+      this.companyForm.get('step2')?.patchValue({
+        link_fb: this.data.companyData.link_fb,
+        link_tiktok: this.data.companyData.link_tiktok,
+        link_insta: this.data.companyData.link_insta,
+        link_pinterest: this.data.companyData.link_pinterest,
+        link_twit: this.data.companyData.link_twit,
+        link_youtube: this.data.companyData.link_youtube,
+        link: this.data.companyData.link,
+      });
+  
+      this.companyForm.get('step3')?.patchValue({
+        primary_color: this.data.companyData.primary_color,
+        secondary_color: this.data.companyData.secondary_color,
+        tertiary_color: this.data.companyData.tertiary_color,
+      });
     }
-     // Mettre à jour les valeurs du formulaire avec les données fournies
-     this.companyForm.patchValue(this.formData);
   }
-
+  
   // Méthode pour initialiser le formulaire
   initializeForm(): void {
     const formGroups = this.stepsConfig.reduce((acc, step, index) => {

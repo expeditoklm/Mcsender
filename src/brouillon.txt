@@ -90,6 +90,8 @@ model UserCompany {
     @@map("user_company")
 }
 
+
+
 prend exemple sur les controlleurs et les services de mon module template
 controlleur : (controlleur exemplaire)
 
@@ -866,3 +868,463 @@ JE NARRIVE PAS A FAIS MA MES REQUETE DEPUIS LE FRONTEND VERS LE BACK SUR LAPI MA
         const userId = request.user['id'];
         return this.companyService.create(createCompanyDto, userId);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { CommonModule } from '@angular/common';
+import { Component, Inject, OnInit } from '@angular/core';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NZ_MODAL_DATA, NzModalModule, NzModalRef } from 'ng-zorro-antd/modal';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
+import { Company } from '../../models/company';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { firstValueFrom } from 'rxjs';
+import { ToastService } from '../../../../consts/components/toast/toast.service';
+import { HttpClient } from '@angular/common/http';
+import { CompanyService } from '../../services/company.service';
+
+@Component({
+  selector: 'app-company-details-modal',
+  standalone: true,
+  imports: [CommonModule, NzModalModule, NzButtonModule, NzIconModule,NzTabsModule
+  ],
+  templateUrl: './company-details-modal.component.html',
+  styleUrl: './company-details-modal.component.css'
+})
+export class CompanyDetailsModalComponent  implements OnInit {
+  @Inject(NZ_MODAL_DATA) public data: any
+
+  company: Company;
+  isLoading = false;
+  isError = false;
+
+  constructor(
+    private modalRef: NzModalRef,
+    private toastService: ToastService,
+    private companyService: CompanyService,
+    private queryClient: QueryClient
+  ) {
+    // Initialiser la variable company avec les données reçues
+    console.log('Données reçues dans le modal :', this.data);
+    this.company = this.data?.company || {};  // S'assurer que company est défini, même s'il est vide
+    console.log('maintenant :', this.company);
+
+  }
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.loadCompany();
+    }, 500); 
+  }
+
+  loadCompany() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['companyData'],
+      queryFn: async () => {
+        return await firstValueFrom(this.companyService.getCompanyById( this.data?.id ));
+      },
+    });
+
+    queryObserver.subscribe((result) => {
+      if (result.status === 'success' && result.data?.company) {
+        console.log("donnée  retourner par api : ",result)
+        // Traitement des données en cas de succès
+        this.company = result.data.company;
+        this.isError = false;
+        this.isLoading = false;
+    
+      } else if (result.status === 'error') {
+        // Gestion des erreurs
+        this.isError = true;
+        this.isLoading = false;
+        console.error('Erreur lors du chargement des entreprises:', result.error);
+       this.toastService.showError('Erreur lors du chargement des entreprises.');
+      } else {
+        // Autres cas (si nécessaire)
+        console.warn('État inattendu:', result);
+        this.isLoading = result.isFetching;
+      }
+    });
+  }
+
+  closeModal(): void {
+    this.modalRef.destroy();
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="dashboard-actions">
+    <!-- <button nz-button nzType="primary" (click)="openModal()">Ajouter</button> -->
+    <button nz-button nzType="primary" (click)="openCompanyCreateModal()">Ajouter une entreprise</button>
+  
+    <input nz-input placeholder="Recherche par nom" [(ngModel)]="searchName" (ngModelChange)="onSearchChange()"/>
+    <input nz-input placeholder="Recherche par description" [(ngModel)]="searchDesc" (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Recherche par Localisation" [(ngModel)]="searchLocation" (ngModelChange)="onSearchChange()"  />
+
+  </div>
+  
+
+  
+  
+  <nz-table
+    #basicTable
+    [nzData]="filteredCompanies"
+    [nzScroll]="{ x: '100%', y: '500px' }"
+    [nzBordered]="true"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    [nzTotal]="total"
+    [nzShowPagination]="false"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  >
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Description</th>
+        <th>Télephone</th>
+        <th>Localisation</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  
+    <tbody>
+      <nz-spin *ngIf="isLoading" nzSimple class="ml-3"></nz-spin>
+
+
+      <ng-container
+      *ngIf="!isLoading && !isError && filteredCompanies.length > 0"
+      class="space-y-4"
+    >
+      <ng-container *ngFor="let company of filteredCompanies">
+        <tr>
+          <td>{{ company.name }}</td>
+          <td>{{ company.description }}</td>
+          <td>{{ company.phone }}</td>
+          <td>{{ company.location }}</td>
+         
+          <td class="action-icons">
+
+            <button nz-button nzType="link" (click)="toggleDetails(company.id)">
+              <i nz-icon [nzType]="isExpanded(company.id)? 'up' : 'down'" nzTheme="outline"></i>
+            </button>
+         
+            <!-- Icône pour "Voir en détail" -->
+            <button nz-button nzType="link" (click)="viewDetailsCompany(company)">
+              <i nz-icon nzType="eye" nzTheme="outline"></i>
+            </button>
+  
+            <!-- Icône pour "Modifier" -->
+            <button nz-button nzType="link" (click)="editCompany(company)">
+              <i nz-icon nzType="edit" nzTheme="outline"></i>
+            </button>
+            
+            <!-- Icône pour "Supprimer" -->
+            <button nz-button nzType="link" nzDanger (click)="openDeleteModal(company)">
+              <i nz-icon nzType="delete" nzTheme="outline"></i>
+            </button>
+           
+          </td>
+        </tr>
+        <tr *ngIf="isExpanded(company.id)">
+          <td colspan="10" class="company-details">
+            <p><strong>Les membres de l'entreprise {{ company.name }}</strong></p>
+            <ol>
+              <!-- Boucler sur les utilisateurs associés à l'entreprise -->
+              <li *ngFor="let userCompany of company.userCompanies">
+                <span>{{ userCompany.user.name || 'Utilisateur inconnu' }}</span>
+                <!-- Bouton pour afficher les détails de l'utilisateur -->
+                <button 
+                  nz-button 
+                  nzType="link" 
+                  (click)="viewDetailsUser(userCompany.user)"
+                  [disabled]="!userCompany.user">
+                  Voir Détails
+                </button>
+                <!-- Bouton pour supprimer l'utilisateur de l'entreprise -->
+                <button 
+                  nz-button 
+                  nzType="dashed" 
+                  (click)="removeUserFromCompany(userCompany.user_id,userCompany.company_id)"
+                  [disabled]="!userCompany.id">
+                  Supprimer
+                </button>
+              </li>
+            </ol>
+          </td>
+        </tr>
+        
+        
+        
+      </ng-container>
+    </ng-container>
+    </tbody>
+  </nz-table>
+  
+
+  
+  
+  <!-- Ajoutez un conteneur pour espacer la pagination -->
+  <div class="pagination-container">
+    <nz-pagination
+      [(nzPageIndex)]="pageIndex"
+      [nzTotal]="total"
+      [nzPageSize]="pageSize"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+    ></nz-pagination>
+  </div>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  CreateCompanyDto {
+  name: 'sdcdc',
+  description: '',
+  link_fb: '',
+  link_tiktok: '',
+  secondary_color: '',
+  primary_color: '',
+  tertiary_color: '',
+  phone: '',
+  whatsapp: '',
+  location: '',
+  link: '',
+  link_insta: '',
+  link_pinterest: '',
+  link_twit: '',
+  link_youtube: '',
+  isActive: ''
+}

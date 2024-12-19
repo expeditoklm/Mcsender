@@ -18,6 +18,11 @@ import { HTTP_INTERCEPTORS, HttpClient } from '@angular/common/http';
 import { QueryClient, QueryObserver } from '@tanstack/query-core';
 import { CompanyService } from '../services/company.service';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { User } from '../../users/models/user';
+import { UserService } from '../../users/services/user.service';
+import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
+import { RemoveUserFromCompanyDto } from '../models/removeUserFromCompanyDto';
+import { UserCompanyService } from '../services/userCompany.service';
 
 @Component({
   selector: 'app-companies-page',
@@ -36,9 +41,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
   templateUrl: './companies-page.component.html',
   styleUrl: './companies-page.component.css',
 })
-
 export class CompaniesPageComponent implements OnInit {
- 
   companies: Company[] = [];
   filteredCompanies: Company[] = [];
   isLoading = false;
@@ -60,19 +63,20 @@ export class CompaniesPageComponent implements OnInit {
     private toastService: ToastService,
     private http: HttpClient,
     private companyService: CompanyService,
-    private queryClient: QueryClient
+    private queryClient: QueryClient,
+    private userService: UserService,
+    private userCompanyService: UserCompanyService
   ) {}
+  expandedCompanyId: number | null = null; // Contient l'ID de l'entreprise actuellement affichée ou null.
 
-  toggleDetails(company: Company): void {
-    this.loadCompanies();
-    this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
-      this.pageIndex = 1;
-      this.applyFilterAndPaginate();
-    });
-    company.deleted = !company.deleted;
+  toggleDetails(companyId: any): void {
+    // Si l'entreprise est déjà affichée, on la referme. Sinon, on ouvre la nouvelle.
+    this.expandedCompanyId =
+      this.expandedCompanyId === companyId ? null : companyId;
   }
-
-  
+  isExpanded(companyId: any): boolean {
+    return this.expandedCompanyId === companyId;
+  }
 
   ngOnInit() {
     setTimeout(() => {
@@ -98,47 +102,60 @@ export class CompaniesPageComponent implements OnInit {
       if (result.status === 'success' && result.data?.companies) {
         // Traitement des données en cas de succès
         this.companies = result.data.companies;
+        console.log(result.data);
         this.applyFilterAndPaginate();
         this.isError = false;
         this.isLoading = false;
-    
+
         // Message de succès (optionnel)
         // this.toastService.showSuccess(result.data.message || 'Données chargées avec succès.');
       } else if (result.status === 'error') {
         // Gestion des erreurs
         this.isError = true;
         this.isLoading = false;
-        console.error('Erreur lors du chargement des entreprises:', result.error);
-       this.toastService.showError('Erreur lors du chargement des entreprises.');
+        console.error(
+          'Erreur lors du chargement des entreprises:',
+          result.error
+        );
+        this.toastService.showError(
+          'Erreur lors du chargement des entreprises.'
+        );
       } else {
         // Autres cas (si nécessaire)
         console.warn('État inattendu:', result);
         this.isLoading = result.isFetching;
       }
     });
-    
   }
 
   applyFilterAndPaginate(): void {
-    const isNotInCompanyRoute = this.router.url.includes('/dashboard/companies-not-confirm');
+    const isNotInCompanyRoute = this.router.url.includes(
+      '/dashboard/companies-not-confirm'
+    );
     const isInCompanyRoute = this.router.url.includes('/dashboard/companies');
-  
+
     let filtered = [...this.companies];
-  
+
     // Filtrage par route
     if (isNotInCompanyRoute) {
-      filtered = filtered.filter(company => company.isActive === false);
+      filtered = filtered.filter((company) => company.isActive === false);
     } else if (isInCompanyRoute) {
-      filtered = filtered.filter(company => company.isActive === true);
+      filtered = filtered.filter((company) => company.isActive === true);
     }
-  
+
     // Filtrage par recherche
-    filtered = filtered.filter(company =>
-      company.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-      company.description.toLowerCase().includes(this.searchDesc.toLowerCase()) &&
-      company.location.toLowerCase().includes(this.searchLocation.toLowerCase())
-    );
-  
+    filtered = filtered.filter((company) => {
+      const name = company.name?.toLowerCase() || '';
+      const description = company.description?.toLowerCase() || '';
+      const location = company.location?.toLowerCase() || '';
+
+      return (
+        name.includes(this.searchName.toLowerCase()) &&
+        description.includes(this.searchDesc.toLowerCase()) &&
+        location.includes(this.searchLocation.toLowerCase())
+      );
+    });
+
     // Mise à jour du total et application de la pagination
     this.total = filtered.length;
     const start = (this.pageIndex - 1) * this.pageSize;
@@ -168,59 +185,60 @@ export class CompaniesPageComponent implements OnInit {
       nzFooter: null,
       nzWidth: '600px',
       nzData: {
-        userData: companyData,
+        companyData: companyData,
         isEdit: !!companyData,
       },
     });
 
     // Récupérer les données après la fermeture du modal
     modalRef.afterClose.subscribe((companyDto) => {
-      console.log('Données reçues du composant enfant :', companyDto);
-
       if (companyDto) {
         const {
           id,
           created_at,
           updated_at,
+          isActive,
           deleted,
+          userCompanies,
           ...filteredCompanyDto
         } = companyDto;
+
+
         const operation = id
           ? this.companyService.updateCompany(id, filteredCompanyDto)
           : this.companyService.createCompany(filteredCompanyDto);
-
-          operation.subscribe({
-            next: (user) => {
-              if (companyDto.id) {
-                // Mise à jour de l'Entreprise existant
-                const index = this.companies.findIndex((u) => u.id === user.id);
-                if (index !== -1) {
-                  this.companies[index] = user;
-                }
-                this.toastService.showSuccess(
-                  'Entreprise mis à jour avec succès.'
-                );
-              } else {
-                // Création d'un nouvel Entreprise
-                this.companies.push(user);
-                this.toastService.showSuccess('Entreprise créé avec succès.');
+        operation.subscribe({
+          next: (user) => {
+            if (companyDto.id) {
+              // Mise à jour de l'Entreprise existant
+              const index = this.companies.findIndex((u) => u.id === user.id);
+              if (index !== -1) {
+                this.companies[index] = user;
               }
-              this.applyFilterAndPaginate();
-            },
-            error: (error) => {
-              console.error(
-                "Erreur lors de l'opération Entreprise:",
-                error.message
+              this.toastService.showSuccess(
+                'Entreprise mis à jour avec succès.'
               );
-              if (error.status === 409) {
-                this.toastService.showError(
-                  'Un Entreprise avec cet email existe déjà.'
-                );
-              } else {
-                this.toastService.showError(error.message);
-              }
-            },
-          });
+            } else {
+              // Création d'un nouvel Entreprise
+              this.companies.push(user);
+              this.toastService.showSuccess('Entreprise créé avec succès.');
+            }
+            this.applyFilterAndPaginate();
+          },
+          error: (error) => {
+            console.error(
+              "Erreur lors de l'opération Entreprise:",
+              error.message
+            );
+            if (error.status === 409) {
+              this.toastService.showError(
+                'Un Entreprise avec cet email existe déjà.'
+              );
+            } else {
+              this.toastService.showError(error.message);
+            }
+          },
+        });
 
         // Traitez les données reçues ici
       }
@@ -228,11 +246,26 @@ export class CompaniesPageComponent implements OnInit {
   }
   // fonction pour voir un company
   viewDetailsCompany(company: any): void {
-    this.modalService.create({
-      nzTitle: "Détails de l'entreprise",
-      nzContent: CompanyDetailsModalComponent,
-      nzData: { company },
-      nzFooter: null,
+    if (!company.id) {
+      this.toastService.showError('ID entreprise non valide');
+      return;
+    }
+
+    this.companyService.getCompanyById(company.id).subscribe({
+      next: (companyDetails) => {
+        this.modalService.create({
+          nzTitle: "Détails de l'entreprise",
+          nzContent: CompanyDetailsModalComponent,
+          nzData: { company: companyDetails },
+          nzFooter: null,
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des détails:', error);
+        this.toastService.showError(
+          "Erreur lors du chargement des détails de l'entreprise."
+        );
+      },
     });
   }
   // fonction pour la modification
@@ -241,124 +274,117 @@ export class CompaniesPageComponent implements OnInit {
     // Ajouter votre logique pour modifier l'entreprise
   }
 
-  stepsConfig = [
-    {
-      title: 'Info Base',
-      controls: [
-        {
-          name: 'name',
-          placeholder: 'Nom de la société',
-          validators: [Validators.required],
-        },
-        {
-          name: 'description',
-          placeholder: 'Description',
-          validators: [Validators.required],
-        },
-        {
-          name: 'phone',
-          placeholder: 'Téléphone',
-          validators: [Validators.required],
-        },
-        {
-          name: 'whatsapp',
-          placeholder: 'WhatsApp',
-          validators: [Validators.required],
-        },
-        {
-          name: 'location',
-          placeholder: 'Localisation',
-          validators: [Validators.required],
-        },
-      ],
-    },
-    {
-      title: 'Liens ',
-      controls: [
-        { name: 'link_fb', placeholder: 'Lien Facebook', validators: [] },
-        { name: 'link_tiktok', placeholder: 'Lien TikTok', validators: [] },
-        { name: 'link_insta', placeholder: 'Lien Instagram', validators: [] },
-        {
-          name: 'link_pinterest',
-          placeholder: 'Lien Pinterest',
-          validators: [],
-        },
-        { name: 'link_twit', placeholder: 'Lien Twitter', validators: [] },
-        { name: 'link_youtube', placeholder: 'Lien YouTube', validators: [] },
-        {
-          name: 'link',
-          placeholder: 'Site Web',
-          validators: [Validators.required],
-        },
-      ],
-    },
-    {
-      title: 'Couleurs ',
-      controls: [
-        {
-          name: 'primary_color',
-          placeholder: 'Couleur principale',
-          validators: [Validators.required],
-        },
-        {
-          name: 'secondary_color',
-          placeholder: 'Couleur secondaire',
-          validators: [],
-        },
-        {
-          name: 'tertiary_color',
-          placeholder: 'Couleur tertiaire',
-          validators: [],
-        },
-      ],
-    },
-    {
-      title: 'Statut',
-      controls: [
-        {
-          name: 'isActive',
-          placeholder: 'Actif',
-          validators: [Validators.required],
-        },
-        { name: 'deleted', placeholder: 'Supprimé', validators: [] },
-      ],
-    },
-  ];
-
-  // Ouvrir le modal avec des données spécifiques
   openDeleteModal(company: any) {
+    if (!company.id) {
+      this.toastService.showError('ID utilisateur non valide');
+      return;
+    }
+
     const modalData = {
       title: 'Supprimer cette entreprise ?',
       message:
         'Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible.',
       confirmText: 'Confirmer',
       cancelText: 'Annuler',
-      callback: () => this.handleDelete(company.id),
+      callback: () => this.handleDelete(company.id!), // Le '!' indique que nous sommes sûrs que l'id existe
     };
 
-    this.deleteModalService.openModal(modalData); // Ouvrir le modal via le service
+    this.deleteModalService.openModal(modalData);
   }
 
   handleDelete(companyId: number): void {
-    //Logique de suppression via l'API
+    this.companyService.deleteCompany(companyId).subscribe({
+      next: () => {
+        this.companies = this.companies.filter(
+          (company) => company.id !== companyId
+        );
+        this.applyFilterAndPaginate();
+        this.toastService.showSuccess(
+          `L'entreprise a été supprimé avec succès.`
+        );
+      },
+      error: (error) => {
+        console.error("Erreur lors de la suppression de l'entreprise:", error);
+        this.toastService.showError(
+          "Erreur lors de la suppression de l'entreprise."
+        );
+      },
+    });
+  }
 
-    this.http
-      .delete(`https://api.example.com/companies/${companyId}`)
-      .subscribe({
-        next: () => {
-          console.log('Compagnie supprimée avec succès');
-          this.companies = this.companies.filter(
-            (company) => company.id !== companyId
-          );
-          let msg = 'La compagnie spprimer avec succes n0 :';
-          this.toastService.showSuccess(msg + companyId);
-        },
-        error: (err) => {
-          console.error('Erreur lors de la suppression de la compagnie', err);
-          this.toastService.showError(
-            'Erreur lors de la suppression de la compagnie.'
-          );
-        },
-      });
+  viewDetailsUser(user: User): void {
+    if (!user.id) {
+      this.toastService.showError('ID utilisateur non valide');
+      return;
+    }
+
+    this.userService.findOne(user.id).subscribe({
+      next: (userDetails) => {
+        this.modalService.create({
+          nzTitle: "Détails de l'utilisateur",
+          nzContent: UserDetailsModalComponent,
+          nzData: { user: userDetails },
+          nzFooter: null,
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des détails:', error);
+        this.toastService.showError(
+          "Erreur lors du chargement des détails de l'utilisateur."
+        );
+      },
+    });
+  }
+
+  openDeleteUserModal(userId: number, companyId: number) {
+    if (!userId) {
+      this.toastService.showError('ID utilisateur non valide');
+      return;
+    }
+    if (!companyId) {
+      this.toastService.showError('ID entreprise non valide');
+      return;
+    }
+
+    const modalData = {
+      title: 'Supprimer cet utilisateur ?',
+      message:
+        'Êtes-vous sûr de vouloir supprimer cette entreprise ? Cette action est irréversible.',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+      callback: () => this.handleDeleteUser(userId!, companyId!), // Le '!' indique que nous sommes sûrs que l'id existe
+    };
+
+    this.deleteModalService.openModal(modalData);
+  }
+  updateCompanyUsers(companyId: number, userId: number): void {
+    const company = this.companies.find((c) => c.id === companyId);
+    if (company) {
+      company.userCompanies = company.userCompanies?.filter(
+        (uc) => uc.user_id !== userId
+      );
+    }
+  }
+
+  handleDeleteUser(user_id: number, company_id: number): void {
+    const dto: RemoveUserFromCompanyDto = {
+      userId: user_id,
+      companyId: company_id,
+    };
+
+    this.userCompanyService.removeUserFromCompany(dto).subscribe({
+      next: () => {
+        this.updateCompanyUsers(company_id, user_id);
+        this.toastService.showSuccess(
+          `L'utilisateur a été supprimé avec succès.`
+        );
+      },
+      error: (error) => {
+        console.error("Erreur lors de la suppression de l'utilisateur:", error);
+        this.toastService.showError(
+          "Erreur lors de la suppression de l'utilisateur."
+        );
+      },
+    });
   }
 }

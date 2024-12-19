@@ -1,3 +1,5 @@
+import { UserCompany } from "./userCompany";
+
 export interface Company {
     id?: number;
     name: string;
@@ -15,8 +17,9 @@ export interface Company {
     link_pinterest: string;
     link_twit: string;
     link_youtube: string;
-    isActive: boolean;
+    isActive?: boolean;
     detailsVisible?: boolean;
     deleted?: boolean;
+    userCompanies?: UserCompany[]; // Ajoutez cette propriété.
   }
   
