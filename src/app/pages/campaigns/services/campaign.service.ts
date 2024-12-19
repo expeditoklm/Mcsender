@@ -19,9 +19,8 @@ export class CampaignService {
 
   // Créer une nouvelle campagne
   createCampaign(campaign: CampaignDto): Observable<any> {
-    return this.http.post(`${this.apiUrl}`, campaign, this.getHttpOptions()).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.post(`${this.apiUrl}`, campaign, this.getHttpOptions())
+    ;
   }
 
   // Obtenir toutes les campagnes
@@ -33,30 +32,25 @@ export class CampaignService {
   
   // Mettre à jour une campagne existante
   updateCampaign(id: number, campaign: UpdateCampaignDto): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}`, campaign, this.getHttpOptions()).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.patch(`${this.apiUrl}/${id}`, campaign, this.getHttpOptions());
   }
 
   // Prolonger une campagne
   extendCampaign(id: number, dto: ExtendCampaignDto): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/extend/${id}`, dto, this.getHttpOptions()).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.patch(`${this.apiUrl}/extend/${id}`, dto, this.getHttpOptions())
+    
+    ;
   }
 
   // Annuler une campagne
   cancelCampaign(id: number): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/cancel/${id}`, {}, this.getHttpOptions()).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.patch(`${this.apiUrl}/cancel/${id}`, {}, this.getHttpOptions());
   }
 
   // Récupérer les campagnes par statut
   getCampaignsByStatus(dto: FindCampaignsByStatusDto): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/status/${dto.status}`).pipe(
       retry(1),
-      catchError(this.handleError)
     );
   }
 

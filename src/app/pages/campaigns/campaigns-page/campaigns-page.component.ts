@@ -207,53 +207,39 @@ export class CampaignsPageComponent implements OnInit {
 
     modalRef.afterClose.subscribe((campaignDto) => {
       if (campaignDto) {
-        const {
-          id,
-          created_at,
-          updated_at,
-          deleted,
-          password,
-          ...filteredCampaignDto
-        } = campaignDto;
-      
+        if (!campaignDto.company_id) {
+          this.toastService.showError('L\'identifiant de la compagnie est requis.');
+          return;
+        }
+    
+        const { id, created_at, updated_at, deleted, ...filteredCampaignDto } = campaignDto;
+    
         const operation = id
           ? this.campaignService.updateCampaign(id, filteredCampaignDto)
           : this.campaignService.createCampaign(filteredCampaignDto);
-
+    
         operation.subscribe({
           next: (campaign) => {
             if (campaignDto.id) {
-              // Mise à jour de l'utilisateur existant
               const index = this.campaigns.findIndex((u) => u.id === campaign.id);
               if (index !== -1) {
                 this.campaigns[index] = campaign;
               }
-              this.toastService.showSuccess(
-                'Utilisateur mis à jour avec succès.'
-              );
+              this.toastService.showSuccess('Campagne mise à jour avec succès.');
             } else {
-              // Création d'un nouvel utilisateur
               this.campaigns.push(campaign);
-              this.toastService.showSuccess('Utilisateur créé avec succès.');
+              this.toastService.showSuccess('Campagne créée avec succès.');
             }
             this.filterCampaigns();
           },
-          error: (error) => {
-            console.error(
-              "Erreur lors de l'opération utilisateur:",
-              error.message
-            );
-            if (error.status === 409) {
-              this.toastService.showError(
-                'Un utilisateur avec cet email existe déjà.'
-              );
-            } else {
-              this.toastService.showError(error.message);
-            }
+          error: (e: any) => {
+            console.error('Erreur lors de l\'opération campagne :', e.error.message);
+            this.toastService.showError(e.error.message);
           },
         });
       }
     });
+    
   }
 
   viewDetailsCampagn(user: any): void {
