@@ -150,7 +150,7 @@ export class CampaignCreateComponent implements OnInit {
           : undefined,
       };
   
-      console.log('Payload envoyé au backend :', payload);
+      //console.log('Payload envoyé au backend :', payload);
       this.modal.destroy(payload);
     } else {
       this.toastService.showError('Veuillez remplir tous les champs obligatoires.');

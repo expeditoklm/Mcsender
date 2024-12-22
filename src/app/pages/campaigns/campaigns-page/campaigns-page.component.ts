@@ -20,6 +20,7 @@ import { CampaignDto, CampaignStatus } from '../models/campaign';
 import { CampaignService } from '../services/campaign.service';
 import { CompanyService } from '../../companies/services/company.service';
 import { CampaignCreateComponent } from '../components/campaign-create/campaign-create.component';
+import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
 
 @Component({
   selector: 'app-campaigns-page',
@@ -102,7 +103,6 @@ export class CampaignsPageComponent implements OnInit {
     });
 
     queryObserver.subscribe((result) => {
-      console.log('result', result.data);
       if (result.error) {
         this.isError = true;
         console.error('Erreur lors du chargement des campagnes:', result.error);
@@ -212,12 +212,12 @@ export class CampaignsPageComponent implements OnInit {
           return;
         }
     
-        const { id, created_at, updated_at, deleted, ...filteredCampaignDto } = campaignDto;
+        const { id, created_at, updated_at, deleted,companyLib, ...filteredCampaignDto } = campaignDto;
     
         const operation = id
           ? this.campaignService.updateCampaign(id, filteredCampaignDto)
           : this.campaignService.createCampaign(filteredCampaignDto);
-    
+  
         operation.subscribe({
           next: (campaign) => {
             if (campaignDto.id) {
@@ -225,9 +225,10 @@ export class CampaignsPageComponent implements OnInit {
               if (index !== -1) {
                 this.campaigns[index] = campaign;
               }
+              this.loadCampaigns();
               this.toastService.showSuccess('Campagne mise à jour avec succès.');
             } else {
-              this.campaigns.push(campaign);
+              this.loadCampaigns();
               this.toastService.showSuccess('Campagne créée avec succès.');
             }
             this.filterCampaigns();
@@ -242,64 +243,41 @@ export class CampaignsPageComponent implements OnInit {
     
   }
 
-  viewDetailsCampagn(user: any): void {
-    // if (!user.id) {
-    //   this.toastService.showError('ID utilisateur non valide');
-    //   return;
-    // }
 
-    // this.userService.findOne(user.id).subscribe({
-    //   next: (userDetails) => {
-    //     this.modalService.create({
-    //       nzTitle: "Détails de l'utilisateur",
-    //       nzContent: UserDetailsModalComponent,
-    //       nzData: { user: userDetails },
-    //       nzFooter: null,
-    //     });
-    //   },
-    //   error: (error) => {
-    //     console.error('Erreur lors du chargement des détails:', error);
-    //     this.toastService.showError(
-    //       "Erreur lors du chargement des détails de l'utilisateur."
-    //     );
-    //   },
-    // });
+  openDeleteModal(campaign: any) {
+    if (!campaign.id) {
+      this.toastService.showError('ID de la campagne non valide');
+      return;
+    }
+
+    const modalData = {
+      title: 'Supprimer cette camapagne ?',
+      message:
+        'Êtes-vous sûr de vouloir supprimer cette campagne ? Cette action est irréversible.',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+      callback: () => this.handleDelete(campaign.id!), // Le '!' indique que nous sommes sûrs que l'id existe
+    };
+
+    this.deleteModalService.openModal(modalData);
   }
 
-  openDeleteModal(user: any) {
-    // if (!user.id) {
-    //   this.toastService.showError('ID utilisateur non valide');
-    //   return;
-    // }
-
-    // const modalData = {
-    //   title: 'Supprimer cet utilisateur ?',
-    //   message:
-    //     'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.',
-    //   confirmText: 'Confirmer',
-    //   cancelText: 'Annuler',
-    //   callback: () => this.handleDelete(user.id!), // Le '!' indique que nous sommes sûrs que l'id existe
-    // };
-
-    // this.deleteModalService.openModal(modalData);
-  }
-
-  handleDelete(userId: number): void {
-    // this.userService.remove(userId).subscribe({
-    //   next: () => {
-    //     this.users = this.users.filter((user) => user.id !== userId);
-    //     this.filterUsers();
-    //     this.toastService.showSuccess(
-    //       `L'utilisateur a été supprimé avec succès.`
-    //     );
-    //   },
-    //   error: (error) => {
-    //     console.error("Erreur lors de la suppression de l'utilisateur:", error);
-    //     this.toastService.showError(
-    //       "Erreur lors de la suppression de l'utilisateur."
-    //     );
-    //   },
-    // });
+  handleDelete(campaignId: number): void {
+    this.campaignService.cancelCampaign(campaignId).subscribe({
+      next: () => {
+        this.campaigns = this.campaigns.filter((campaign) => campaign.id !== campaignId);
+        this.filterCampaigns();
+        this.toastService.showSuccess(
+          `La campagne a été supprimé avec succès.`
+        );
+      },
+      error: (error) => {
+        console.error("Erreur lors de la suppression de la campagne:", error);
+        this.toastService.showError(
+          "Erreur lors de la suppression de la campagne."
+        );
+      },
+    });
   }
 
   openAssociateCompaniesModal(user: any): void {

@@ -1,24 +1,41 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { LoginService } from './login.service';
+import { NavigationService } from './navigation.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
-  constructor(private router: Router, private loginService: LoginService) {}
+export class AuthGuard implements CanActivate  {
+  constructor(
+    private router: Router,
+    private loginService: LoginService,
+    private navigationService: NavigationService
+  ) {}
 
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    const idUser = this.loginService.getUserId();
+  canActivate( next: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): boolean {
+    // Récupérer le token depuis le sessionStorage
+    const token = sessionStorage.getItem('user_session_token');
 
-    // Si l'utilisateur est connecté, autoriser l'accès
-    if (idUser) {
-      return true;
-    } else {
-      // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
-      this.router.navigate(['/login']);
-      return false;
+    if (token) {
+      // Décoder le token pour vérifier la date d'expiration
+      const payload = this.loginService.decodeJWT(token);
+
+      if (payload && payload.exp) {
+        const currentTime = Math.floor(Date.now() / 1000); // Obtenir le temps actuel en secondes
+        if (payload.exp > currentTime) {
+          // Le token est valide
+          return true;
+        }
+      }
     }
+  console.log('Token invalide ou expiré. Redirection vers /login.');
+    sessionStorage.removeItem('user_session_token');
+    this.navigationService.clearPreviousUrl(); // Clear any old route
+    this.navigationService.previousUrl = state.url; // Memorize the current route
+    this.router.navigate(['/login']);
+    return false;
   }
 }
 

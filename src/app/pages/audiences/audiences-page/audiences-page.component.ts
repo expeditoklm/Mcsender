@@ -123,7 +123,6 @@ export class AudiencesPageComponent implements OnInit {
 
     modalRef.afterClose.subscribe((result) => {
       if (result) {
-        console.log('Données reçues :', result);
         this.users.push(result); // Ajouter l'utilisateur créé
         this.applyFilter(); // Réappliquer le filtre
       }

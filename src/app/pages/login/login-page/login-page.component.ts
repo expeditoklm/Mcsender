@@ -10,6 +10,7 @@ import { NzInputGroupComponent, NzInputModule } from 'ng-zorro-antd/input';
 import { RegisterService } from '../../register/services/register.service';
 import { LoginService } from '../services/login.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
+import { NavigationService } from '../services/navigation.service';
 
 @Component({
   selector: 'app-login-page',
@@ -50,7 +51,8 @@ export class LoginPageComponent implements OnInit {
     private fb: FormBuilder,
     private router: Router,
     private loginService: LoginService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private navigationService: NavigationService
   ) {}
 
   ngOnInit(): void {
@@ -70,23 +72,15 @@ export class LoginPageComponent implements OnInit {
 
       this.loginService.signIn(this.userDto).subscribe({
         next: (response: any) => {
-          console.log(response);
 
           const { token, user } = response;
           sessionStorage.setItem("user_session_token", token);
           sessionStorage.setItem("user_session_username", user.userName + ' ' + user.name );
-
-          // Décoder le token pour obtenir les informations utilisateur
-          // const decodedToken = this.loginService.decodeJWT(token);
-          // if (decodedToken) {
-          //   console.log("Nom d'utilisateur :", decodedToken.id);
-          //   console.log("Email de l'utilisateur :", decodedToken.email);
-          // }
-          const fk = this.loginService.getUserId();
-          console.log("id meme:", fk);
-
           this.toastService.showSuccess('Connexion réussie !');
-          this.router.navigateByUrl('/dashboard');
+          // Redirige vers la route précédente si elle existe, sinon vers le tableau de bord
+        const redirectUrl = this.navigationService.getPreviousUrl() || '/dashboard';
+        this.navigationService.clearPreviousUrl();
+        this.router.navigate([redirectUrl]);
         },
         error: (error) => {
           const errorMessage = error?.error?.message || 'Coordonnées Invalides';

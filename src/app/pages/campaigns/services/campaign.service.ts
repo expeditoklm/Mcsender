@@ -29,10 +29,16 @@ export class CampaignService {
       map(response => response.campaigns)
     );
   }
+
+    // Mettre à jour une campagne existante
+    findOne(id: number): Observable<any> {
+      return this.http.get(`${this.apiUrl}/${id}`);
+    }
+  
   
   // Mettre à jour une campagne existante
   updateCampaign(id: number, campaign: UpdateCampaignDto): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}`, campaign, this.getHttpOptions());
+    return this.http.put(`${this.apiUrl}/${id}`, campaign, this.getHttpOptions());
   }
 
   // Prolonger une campagne
@@ -44,7 +50,7 @@ export class CampaignService {
 
   // Annuler une campagne
   cancelCampaign(id: number): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/cancel/${id}`, {}, this.getHttpOptions());
+    return this.http.delete(`${this.apiUrl}/cancel/${id}`, {});
   }
 
   // Récupérer les campagnes par statut
@@ -54,16 +60,7 @@ export class CampaignService {
     );
   }
 
-  // Gestion des erreurs
-  private handleError(error: any) {
-    let errorMessage = '';
-    if (error.error instanceof ErrorEvent) {
-      errorMessage = `Erreur : ${error.error.message}`;
-    } else {
-      errorMessage = `Erreur ${error.status}: ${error.message}`;
-    }
-    return throwError(() => new Error(errorMessage));
-  }
+
 
   // Options HTTP
   private getHttpOptions() {

@@ -102,7 +102,6 @@ export class CompaniesPageComponent implements OnInit {
       if (result.status === 'success' && result.data?.companies) {
         // Traitement des données en cas de succès
         this.companies = result.data.companies;
-        console.log(result.data);
         this.applyFilterAndPaginate();
         this.isError = false;
         this.isLoading = false;
@@ -268,11 +267,7 @@ export class CompaniesPageComponent implements OnInit {
       },
     });
   }
-  // fonction pour la modification
-  editCompany(company: any): void {
-    console.log("Modifier l'entreprise:", company);
-    // Ajouter votre logique pour modifier l'entreprise
-  }
+
 
   openDeleteModal(company: any) {
     if (!company.id) {
