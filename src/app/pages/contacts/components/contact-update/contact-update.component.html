@@ -1,0 +1,47 @@
+<div class="user-create-form-container">
+  <div class="custom-modal-overlay" (click)="cancel()"></div>
+  <div class="custom-modal-content">
+    <h3 class="form-title">Modifier une campagne</h3>
+    <form nz-form [nzLayout]="'vertical'" class="user-create-form">
+      <!-- Champ Nom -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'name'">Libellé</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="name"
+            [(ngModel)]="formData.name"
+            name="name"
+            placeholder="Entrez le libellé"
+            required
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'username'">Prénom</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="username"
+            [(ngModel)]="formData.name"
+            name="username"
+            placeholder="Entrez le Prénom"
+            required
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+  
+      <!-- Boutons d'action -->
+      <div class="form-buttons">
+        <button nz-button nzType="primary" nzBlock (click)="submitForm()">
+          Enregistrer
+        </button>
+        <button nz-button nzType="default" nzBlock (click)="cancel()">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

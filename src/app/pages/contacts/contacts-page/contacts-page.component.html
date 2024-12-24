@@ -1,11 +1,9 @@
 <div class="dashboard-actions">
-    <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter un contact</button>
   
-    <input nz-input placeholder="Nom et prénom" [(ngModel)]="searchName" />
-    <input nz-input placeholder="Email / telephone" [(ngModel)]="searchRole" />
-    <input nz-input placeholder="Audience " [(ngModel)]="searchName" />
-    <input nz-input placeholder="Campagne" [(ngModel)]="searchEmail" />
-    <input nz-input placeholder="Entreprise" [(ngModel)]="searchRole" />
+    <input nz-input placeholder="Nom et prénom" [(ngModel)]="searchNamePrenom"  (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Email / telephone" [(ngModel)]="searchEmailTelephone"  (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Audience " [(ngModel)]="searchAudience"  (ngModelChange)="onSearchChange()" />
+    <input nz-input placeholder="Entreprise" [(ngModel)]="searchCompany"  (ngModelChange)="onSearchChange()" />
   </div>
 
   
@@ -13,7 +11,7 @@
   
   <nz-table
     #basicTable
-    [nzData]="filteredUsers"
+    [nzData]="filteredContacts"
     [nzScroll]="{ x: '100%', y: '500px' }"
     [nzBordered]="true"
     [nzPageIndex]="pageIndex"
@@ -35,50 +33,52 @@
     </thead>
   
     <tbody>
-      <ng-container *ngFor="let user of filteredUsers">
+      <ng-container *ngFor="let contact of filteredContacts">
         <tr>
-          <td>{{ user.name }}</td>
-          <td>{{ user.username }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.role }}</td>
+          <td>{{ contact.name }}</td>
+          <td>{{ contact.username }}</td>
+          <td>{{ contact.email }}</td>
+          <td>{{ contact.phone }}</td>
+          <td>{{ contact.source }}</td>
          
           <td class="action-icons">
 
-            <button nz-button nzType="link" (click)="toggleDetails(user)">
-                <i nz-icon [nzType]="user.deleted ? 'up' : 'down'" nzTheme="outline"></i>
-              </button>
-         
-            <!-- Icône pour "Voir en détail" -->
-            <button nz-button nzType="link" (click)="viewDetailsUser(user)">
-              <i nz-icon nzType="eye" nzTheme="outline"></i>
+            <button nz-button nzType="link" (click)="toggleDetails(contact.id)">
+              <i
+                nz-icon
+                [nzType]="isExpanded(contact.id) ? 'up' : 'down'"
+                nzTheme="outline"
+              ></i>
             </button>
   
             <!-- Icône pour "Modifier" -->
-            <button nz-button nzType="link" (click)="editUser(user)">
+            <button nz-button nzType="link" (click)="openContactUpdateModal(contact)">
               <i nz-icon nzType="edit" nzTheme="outline"></i>
             </button>
             
             <!-- Icône pour "Supprimer" -->
-            <button nz-button nzType="link" nzDanger (click)="deleteUser(user)">
+            <button nz-button nzType="link" nzDanger (click)="deleteUser(contact)">
               <i nz-icon nzType="delete" nzTheme="outline"></i>
             </button>
           </td>
         </tr>
 
-        <tr *ngIf="user.deleted">
-         
-            <td colspan="10" class="company-details">
-              <p><strong>Les audience dont fait partir {{ user.name }}</strong></p>
-              <ol>
-                 <!-- Boucler sur les differents audiences dont fait partie ce contact -->
-                <!-- <button nz-button nzType="link" (click)="viewDetailsUser(user)">
-                  <li><p>oklm bro</p></li>
-                </button> -->
-                 <!-- crrer un bouton icone supprier devant chaque utilisateur  -->
-              </ol>
-            </td>
-          </tr>
+        <tr *ngIf="isExpanded(contact.id)">
+          <td colspan="10" class="company-details">
+            <p><strong>Audiences associées à {{ contact.name }}</strong></p>
+        
+            <div *ngIf="!contact.audienceContacts || contact.audienceContacts.length === 0">
+              <p class="no-users-message">Aucune audience associée à ce contact.</p>
+            </div>
+        
+            <ul *ngIf="contact.audienceContacts && contact.audienceContacts.length > 0">
+              <li *ngFor="let audience of contact.audienceContacts">
+                {{ audience.name }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        
         
       </ng-container>
     </tbody>

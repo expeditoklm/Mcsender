@@ -1,83 +1,59 @@
 <div class="dashboard-actions">
-    <button nz-button nzType="primary" (click)="openUserCreateModal()">Ajouter une audience</button>
-  
-    <input nz-input placeholder="Recherche par libellé" [(ngModel)]="searchName" />
-    <input nz-input placeholder="Recherche par campagne" [(ngModel)]="searchEmail" />
-    <input nz-input placeholder="Recherche par entreprise" [(ngModel)]="searchRole" />
-  </div>
-  
+  <button nz-button nzType="primary" (click)="openAudienceCreateModal()">Ajouter une audience</button>
 
-  
-  
-  <nz-table
-    #basicTable
-    [nzData]="filteredUsers"
-    [nzScroll]="{ x: '100%', y: '500px' }"
-    [nzBordered]="true"
-    [nzPageIndex]="pageIndex"
-    [nzPageSize]="pageSize"
-    [nzTotal]="total"
-    [nzShowPagination]="false"
-    (nzPageIndexChange)="onPageIndexChange($event)"
-    (nzPageSizeChange)="onPageSizeChange($event)"
-  >
-    <thead>
+  <input nz-input placeholder="Recherche par libellé" [(ngModel)]="searchName"  (ngModelChange)="onSearchChange()" />
+  <input nz-input placeholder="Recherche par description" [(ngModel)]="searchDescription"  (ngModelChange)="onSearchChange()" />
+</div>
+
+<nz-table #basicTable [nzData]="filteredAudiences" [nzScroll]="{ x: '100%', y: '500px' }" [nzBordered]="true"
+  [nzPageIndex]="pageIndex" [nzPageSize]="pageSize" [nzTotal]="total" [nzShowPagination]="false"
+  (nzPageIndexChange)="onPageIndexChange($event)" (nzPageSizeChange)="onPageSizeChange($event)">
+  <thead>
+    <tr>
+      <th>Libellé</th>
+      <th>Description</th>
+      <th>Entreprise</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <ng-container *ngFor="let audience of filteredAudiences">
       <tr>
-        <th>Libellé</th>
-        <th>Description</th>
-        <th>Campagne</th>
-        <th>Entreprise</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-  
-    <tbody>
-      <ng-container *ngFor="let user of filteredUsers">
-        <tr>
-          <td>{{ user.name }}</td>
-          <td>{{ user.username }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.role }}</td>
-         
-          <td class="action-icons">
-         
-            <!-- Icône pour "Voir en détail" -->
-            <button nz-button nzType="link" (click)="viewDetailsUser(user)">
-              <i nz-icon nzType="eye" nzTheme="outline"></i>
-            </button>
-  
-            <!-- Icône pour "Modifier" -->
-            <button nz-button nzType="link" (click)="editUser(user)">
-              <i nz-icon nzType="edit" nzTheme="outline"></i>
-            </button>
-            
-            <!-- Icône pour "Supprimer" -->
-            <button nz-button nzType="link" nzDanger (click)="deleteUser(user)">
-              <i nz-icon nzType="delete" nzTheme="outline"></i>
-            </button>
+        <td>{{ audience.name }}</td>
+        <td>{{ audience.description }}</td>
+        <td>{{ audience.companyLib || 'Non spécifié' }}</td>
 
-            <!-- Icône pour "Voir les contacts" -->
-<button nz-button nzType="link" (click)="goToContacts(user)">
-  <i nz-icon nzType="contacts" nzTheme="outline"></i>
-</button>
-          </td>
-        </tr>
-        
-      </ng-container>
-    </tbody>
-  </nz-table>
-  
-  
-  
-  
-  <!-- Ajoutez un conteneur pour espacer la pagination -->
-  <div class="pagination-container">
-    <nz-pagination
-      [(nzPageIndex)]="pageIndex"
-      [nzTotal]="total"
-      [nzPageSize]="pageSize"
-      (nzPageIndexChange)="onPageIndexChange($event)"
-      (nzPageSizeChange)="onPageSizeChange($event)"
-    ></nz-pagination>
-  </div>
-  
+        <td class="action-icons">
+
+      
+
+          <!-- Icône pour "Modifier" -->
+          <button nz-button nzType="link" (click)="openAudienceCreateModal(audience)">
+            <i nz-icon nzType="edit" nzTheme="outline"></i>
+          </button>
+
+          <!-- Icône pour "Supprimer" -->
+          <button nz-button nzType="link" nzDanger (click)="openDeleteModal(audience)">
+            <i nz-icon nzType="delete" nzTheme="outline"></i>
+          </button>
+
+          <!-- Icône pour "Voir les contacts" -->
+          <button nz-button nzType="link" (click)="goToContacts(audience)">
+            <i nz-icon nzType="contacts" nzTheme="outline"></i>
+          </button>
+        </td>
+      </tr>
+
+    </ng-container>
+  </tbody>
+</nz-table>
+
+
+
+
+<!-- Ajoutez un conteneur pour espacer la pagination -->
+<div class="pagination-container">
+  <nz-pagination [(nzPageIndex)]="pageIndex" [nzTotal]="total" [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)" (nzPageSizeChange)="onPageSizeChange($event)"></nz-pagination>
+</div>
