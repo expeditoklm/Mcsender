@@ -55,12 +55,11 @@
             <button nz-button nzType="link" (click)="openContactUpdateModal(contact)">
               <i nz-icon nzType="edit" nzTheme="outline"></i>
             </button>
-            
             <!-- Icône pour "Supprimer" -->
-            <button nz-button nzType="link" nzDanger (click)="deleteUser(contact)">
+            <button nz-button nzType="link" nzDanger (click)="openDeleteModal(contact)">
               <i nz-icon nzType="delete" nzTheme="outline"></i>
             </button>
-          </td>
+          </td> 
         </tr>
 
         <tr *ngIf="isExpanded(contact.id)">

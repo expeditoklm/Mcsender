@@ -4,6 +4,6 @@ export interface Audience {
     companyId: number;
     description?: string;
     companyLib?: string;
-
+    company?: string;
   }
   

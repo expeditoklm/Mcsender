@@ -280,31 +280,7 @@ export class CampaignsPageComponent implements OnInit {
     });
   }
 
-  openAssociateCompaniesModal(user: any): void {
-    // Vérification préalable de l'existence de l'id
-    // if (!user.id) {
-    //   this.toastService.showError('ID utilisateur non valide');
-    //   return;
-    // }
-
-    // const modalRef = this.modalService.create({
-    //   nzTitle: `Associer des entreprises à ${user.name}`,
-    //   nzContent: AssociateCompaniesModalComponent,
-    //   nzFooter: null,
-    //   nzWidth: '600px',
-    //   nzData: { user },
-    // });
-
-    // modalRef.afterClose.subscribe((result: { company_id: number }) => {
-    //   if (result && user.id) {
-    //     // Double vérification de user.id
-    //     const createUserCompanyDto: CreateUserCompanyDto = {
-    //       user_id: user.id,
-    //       company_id: result.company_id,
-    //     };
-    //   }
-    // });
-  }
+ 
 
   ngOnDestroy() {
     // Nettoyage du Subject pour éviter les fuites de mémoire

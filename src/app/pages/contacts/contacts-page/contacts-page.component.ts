@@ -6,7 +6,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, firstValueFrom, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, firstValueFrom, Subject } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { User } from '../../users/models/user';
@@ -44,7 +44,6 @@ import { ContactUpdateComponent } from '../components/contact-update/contact-upd
   ],
 })
 export class ContactsPageComponent implements OnInit {
-
   constructor(
     private modalService: NzModalService,
     private cdr: ChangeDetectorRef,
@@ -55,12 +54,9 @@ export class ContactsPageComponent implements OnInit {
     private route: ActivatedRoute,
     private queryClient: QueryClient,
     private contactService: ContactService
-
   ) {}
 
   expandedContactId: number | null = null; // Contient l'ID de l'entreprise actuellement affichée ou null.
-
-
 
   contacts: CreateContactDto[] = [];
   filteredContacts: CreateContactDto[] = [];
@@ -79,32 +75,41 @@ export class ContactsPageComponent implements OnInit {
   private searchSubject: Subject<void> = new Subject();
 
   ngOnInit() {
-
-    this.route.queryParams.subscribe(params => {
-      if (params['audience']) {
-        this.searchAudience = params['audience'];
-      }
-     
-      if (params['entreprise']) {
-        this.searchCompany = params['entreprise'];
-      }
+    // Charger les contacts d'abord
+    this.loadContacts(() => {
+      // Ensuite, écouter les paramètres de l'URL
+      this.route.queryParams.subscribe((params) => {
+        if (params['audience']) {
+          this.searchAudience = params['audience'];
+          console.log("Audience préremplie:", this.searchAudience);
+        }
+        if (params['entreprise']) {
+          this.searchCompany = params['entreprise'];
+          console.log("Entreprise préremplie:", this.searchCompany);
+        }
+        // Déclencher manuellement un événement de recherche
+        this.searchSubject.next(); // Force le filtrage après mise à jour des champs
+      });
+      // Filtrer une première fois si aucun paramètre n'est fourni
       this.filterContacts();
     });
-
-    setTimeout(() => {
-      this.loadContacts();
-    }, 500);
-
+    // Configurer le sujet pour les changements des champs de recherche
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
+      console.log("Événement reçu dans searchSubject");
       this.filterContacts();
     });
   }
-
+  
+  
+  
+  
+  
 
   toggleDetails(contactId: any): void {
-    this.expandedContactId = this.expandedContactId === contactId ? null : contactId;
-  
+    this.expandedContactId =
+      this.expandedContactId === contactId ? null : contactId;
+
     if (this.expandedContactId) {
       this.loadAudiencesForContact(contactId);
     }
@@ -118,7 +123,15 @@ export class ContactsPageComponent implements OnInit {
       (audiences) => {
         const contact = this.contacts.find(c => c.id === contactId);
         if (contact) {
-          contact.audienceContacts = audiences; // Assurez-vous que `audienceContacts` existe dans le modèle.
+          contact.audienceContacts = audiences;
+          // Associer les noms des audiences
+          contact.audience = audiences.map(audience => audience.name).join(', ');
+  
+          // Associer les noms des entreprises
+          contact.company = audiences
+            .map(audience => audience.company?.name || '') // Vérifie si la compagnie existe
+            .filter(companyName => companyName) // Filtrer les valeurs vides
+            .join(', ');
         }
       },
       (error) => {
@@ -128,7 +141,8 @@ export class ContactsPageComponent implements OnInit {
     );
   }
   
-  loadContacts() {
+
+  loadContacts(callback?: () => void) {
     this.isLoading = true;
     const queryObserver = new QueryObserver<any>(this.queryClient, {
       queryKey: ['contactsList'],
@@ -138,58 +152,88 @@ export class ContactsPageComponent implements OnInit {
     });
   
     queryObserver.subscribe((result) => {
+      console.log(result.data)
       if (result.error) {
         this.isError = true;
         console.error('Erreur lors du chargement des contacts:', result.error);
         this.toastService.showError('Erreur lors du chargement des contacts.');
       } else {
         if (result.data && Array.isArray(result.data)) {
-          // Transformer la donnée si nécessaire
-          this.contacts = result.data ; // Adaptez à l'objet avec la propriété `contacts`
-          //console.log('this.contacts:', this.contacts);
-  
-          this.filterContacts(); // Appliquez un filtrage ou une logique additionnelle si nécessaire
+          this.contacts = result.data;
         } else {
           console.warn('Format inattendu des données :', result.data);
-          this.contacts = []; // Initialisez un tableau vide pour éviter des erreurs plus loin
+          this.contacts = [];
         }
   
         this.isError = false;
-        this.isLoading = false; // Assurez-vous de stopper le chargement
+        this.isLoading = false;
+  
+        // Exécuter le callback si défini
+        if (callback) {
+          callback();
+        }
       }
     });
   }
   
+
   // Fonction de recherche
   onSearchChange(): void {
     this.searchSubject.next();
   }
 
-  // Filtrage des utilisateurs
   filterContacts(): void {
+    if (!this.contacts || this.contacts.length === 0) {
+      console.warn('Aucun contact disponible pour le filtrage.');
+      return;
+    }
+  
+    // Étape 1 : Charger les audiences pour chaque contact
+    this.contacts.forEach((contact: any) => {
+      this.loadAudiencesForContact(contact.id);
+    });
+  
+    // Étape 2 : Associer les noms des audiences et entreprises
+    this.contacts.forEach(contact => {
+      if (contact.audienceContacts) {
+        contact.audience = contact.audienceContacts.map(audience => audience.name).join(', ');
+        contact.company = contact.audienceContacts
+          .map((audience: any) => audience.companyName)
+          .join(', ');
+      }
+    });
+  
+    // Étape 3 : Appliquer le filtrage
     let filtered = [...this.contacts];
-    filtered = filtered.filter(contact =>
-      (contact.name && contact.name.toLowerCase().includes(this.searchNamePrenom.toLowerCase())) ||
-      (contact.username && contact.username.toLowerCase().includes(this.searchNamePrenom.toLowerCase())) &&
-      (contact.email && contact.email.toLowerCase().includes(this.searchEmailTelephone.toLowerCase())) ||
-      (contact.phone && contact.phone.toLowerCase().includes(this.searchEmailTelephone.toLowerCase()))&&
-      (contact.company && contact.company.toLowerCase().includes(this.searchCompany.toLowerCase()))&&
-      (contact.audience && contact.audience.toLowerCase().includes(this.searchAudience.toLowerCase()))
-    );
+    filtered = filtered.filter(contact => {
+      const nameOrUsernameMatch = contact.name?.toLowerCase().includes(this.searchNamePrenom.toLowerCase()) ||
+                                  contact.username?.toLowerCase().includes(this.searchNamePrenom.toLowerCase());
+  
+      const emailOrPhoneMatch = contact.email?.toLowerCase().includes(this.searchEmailTelephone.toLowerCase()) ||
+                                contact.phone?.toLowerCase().includes(this.searchEmailTelephone.toLowerCase());
+  
+      const companyMatch = !this.searchCompany || contact.company?.toLowerCase().includes(this.searchCompany.toLowerCase());
+      const audienceMatch = !this.searchAudience || contact.audience?.toLowerCase().includes(this.searchAudience.toLowerCase());
+     
+      return nameOrUsernameMatch && emailOrPhoneMatch && companyMatch && audienceMatch;
+    });
 
-    console.log("filtered",filtered)
-
+    // Pagination
     this.total = filtered.length;
     const start = (this.pageIndex - 1) * this.pageSize;
+
     this.filteredContacts = filtered.slice(start, start + this.pageSize);
+  
     this.cdr.detectChanges();
   }
+  
+  
+  
 
   // Pagination
   onPageIndexChange(pageIndex: number): void {
     this.pageIndex = pageIndex;
     this.filterContacts();
-
   }
 
   onPageSizeChange(pageSize: number): void {
@@ -199,65 +243,80 @@ export class ContactsPageComponent implements OnInit {
   }
 
   openContactUpdateModal(contactData: any): void {
-      const modalRef = this.modalService.create({
-        nzTitle:  "Modifier la campagne" ,
-        nzContent: ContactUpdateComponent,
-        nzFooter: null,
-        nzWidth: '600px',
-        nzData: {
-          contactData: contactData,
-        },
-      });
-  
-      modalRef.afterClose.subscribe((contactDto) => {
-        if (contactDto) {
-          const { id, created_at, updated_at, deleted, ...filteredCampaignDto } = contactDto;
-          const operation = this.contactService.updateContact(id, filteredCampaignDto)
-          operation.subscribe({
-            next: (contact) => {
-                const index = this.contacts.findIndex((u) => u.id === contact.id);
-                if (index !== -1) {
-                  this.contacts[index] = contact;
-                }
-                this.filterContacts();
-                this.toastService.showSuccess('contact mise à jour avec succès.');
-            },
-            error: (e: any) => {
-              console.error('Erreur lors de l\'opération contact :', e.error.message);
-              this.toastService.showError(e.error.message);
-            },
-          });
-        }
-      });
-      
-    }
+    const modalRef = this.modalService.create({
+      nzTitle: 'Modifier le contact',
+      nzContent: ContactUpdateComponent,
+      nzFooter: null,
+      nzWidth: '600px',
+      nzData: {
+        contactData: contactData,
+      },
+    });
 
-  // Afficher les détails d'un utilisateur
-  viewDetailsUser(user: any): void {
-    this.modalService.create({
-      nzTitle: 'Détails de l\'utilisateur',
-      nzContent: UserDetailsModalComponent,
-      nzData: { user },
-      nzFooter: null
+    modalRef.afterClose.subscribe((contactDto) => {
+      if (contactDto) {
+        const { id, created_at, updated_at, deleted,audienceContacts,audience,company, ...filteredContactDto } =
+          contactDto;
+        const operation = this.contactService.updateContact(
+          id,
+          filteredContactDto
+        );
+        operation.subscribe({
+          next: (contact) => {
+            const index = this.contacts.findIndex((u) => u.id === contact.id);
+            if (index !== -1) {
+              this.contacts[index] = contact;
+            }
+            this.filterContacts();
+            this.toastService.showSuccess('contact mise à jour avec succès.');
+          },
+          error: (e: any) => {
+            console.error(
+              "Erreur lors de l'opération contact :",
+              e.error.message
+            );
+            this.toastService.showError(e.error.message);
+          },
+        });
+      }
     });
   }
 
-  // Modifier un utilisateur
-  editUser(user: any): void {
-    console.log('Modifier l\'utilisateur:', user);
+  openDeleteModal(contact: any) {
+    if (!contact.id) {
+      this.toastService.showError('ID du contact non valide');
+      return;
+    }
+
+    const modalData = {
+      title: 'Supprimer ce contact ?',
+      message:
+        'Êtes-vous sûr de vouloir supprimer ce contact ? Cette action est irréversible.',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+      callback: () => this.handleDelete(contact.id!), // Le '!' indique que nous sommes sûrs que l'id existe
+    };
+
+    this.deleteModalService.openModal(modalData);
   }
 
-  // Supprimer un utilisateur
-  deleteUser(user: any): void {
-    this.isModalVisible = true;
-  }
-
-  closeModal(): void {
-    this.isModalVisible = false;
-  }
-
-  confirmDelete(): void {
-    console.log('Utilisateur supprimé');
-    this.closeModal();
+  handleDelete(contactId: number): void {
+    this.contactService.deleteContact(contactId).subscribe({
+      next: () => {
+        this.contacts = this.contacts.filter(
+          (contact) => contact.id !== contactId
+        );
+        this.filterContacts();
+        this.toastService.showSuccess(
+          `La campagne a été supprimé avec succès.`
+        );
+      },
+      error: (error: any) => {
+        console.error('Erreur lors de la suppression du contact:', error);
+        this.toastService.showError(
+          'Erreur lors de la suppression du contact.'
+        );
+      },
+    });
   }
 }

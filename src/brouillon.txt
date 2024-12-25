@@ -1328,3 +1328,23 @@ export class CompanyDetailsModalComponent  implements OnInit {
   link_youtube: '',
   isActive: ''
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+je souhaite que contact.audience contiennent tous les names des adiences dont fait partie chaque  et 
+  utiliser les ids de chaque audience recuperer pour connaitre son company cest a dire la company dans laquele 
+  laudience est creer et mettre les name dans contact.company.
+
+  utilise cette fonction precedemment ecrite pour selectionner les audiences des contact

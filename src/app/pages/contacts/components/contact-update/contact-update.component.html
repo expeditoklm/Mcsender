@@ -1,19 +1,18 @@
 <div class="user-create-form-container">
   <div class="custom-modal-overlay" (click)="cancel()"></div>
   <div class="custom-modal-content">
-    <h3 class="form-title">Modifier une campagne</h3>
+    <h3 class="form-title">Modifier un contact</h3>
     <form nz-form [nzLayout]="'vertical'" class="user-create-form">
       <!-- Champ Nom -->
       <nz-form-item>
-        <nz-form-label [nzFor]="'name'">Libellé</nz-form-label>
+        <nz-form-label [nzFor]="'name'">Nom</nz-form-label>
         <nz-form-control nzHasFeedback>
           <input
             nz-input
             id="name"
             [(ngModel)]="formData.name"
             name="name"
-            placeholder="Entrez le libellé"
-            required
+            placeholder="Entrez le nouveau nom"
           />
         </nz-form-control>
       </nz-form-item>
@@ -24,10 +23,49 @@
           <input
             nz-input
             id="username"
-            [(ngModel)]="formData.name"
+            [(ngModel)]="formData.username"
             name="username"
-            placeholder="Entrez le Prénom"
-            required
+            placeholder="Entrez le nouveau prénom"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'email'">E-mail</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="email"
+            [(ngModel)]="formData.email"
+            name="email"
+            placeholder="Entrez le nouveau email"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'phone'">Téléphone</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="phone"
+            [(ngModel)]="formData.phone"
+            name="phone"
+            placeholder="Entrez le numero téléphone"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'source'">Source</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="source"
+            [(ngModel)]="formData.source"
+            name="source"
+            placeholder="Entrez la nouvelle source"
           />
         </nz-form-control>
       </nz-form-item>
