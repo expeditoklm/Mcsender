@@ -13,8 +13,6 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
-import { Roles } from '../../../../consts/role';
 import { Router } from '@angular/router';
 import { ToastService } from '../../../../consts/components/toast/toast.service';
 import { HttpClient } from '@angular/common/http';
@@ -22,14 +20,14 @@ import { CompanyService } from '../../../companies/services/company.service';
 import { QueryClient, QueryObserver } from '@tanstack/query-core';
 import { UserService } from '../../../users/services/user.service';
 import { UserCompanyService } from '../../../users/services/userCompany.service';
-import { Company } from '../../../companies/models/company';
-import { firstValueFrom } from 'rxjs';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
-import { CreateCompanyDto } from '../../../companies/models/createCompanyDto';
-import { CreateContactDto } from '../../models/CreateContactDto';
+import { CreateTemplateType } from '../../models/CreateTemplateType';
+import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { firstValueFrom } from 'rxjs';
+import { ChannelService } from '../../../channels/services/channel.service';
 
 @Component({
-  selector: 'app-contact-update',
+  selector: 'app-template-type-create',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -44,9 +42,11 @@ import { CreateContactDto } from '../../models/CreateContactDto';
     NzFormModule,
     NzGridModule,
     NzDatePickerModule,
+    NzOptionComponent,
+    NzSelectComponent,
   ],
-  templateUrl: './contact-update.component.html',
-  styleUrl: './contact-update.component.css',
+  templateUrl: './template-type-create.component.html',
+  styleUrl: './template-type-create.component.css',
   providers: [
     {
       provide: QueryClient,
@@ -54,21 +54,17 @@ import { CreateContactDto } from '../../models/CreateContactDto';
     },
   ],
 })
-export class ContactUpdateComponent implements OnInit {
-  @Input() contactData?: CreateContactDto;
+export class templateTypeCreateComponent implements OnInit {
+  @Input() templateTypeData?: CreateTemplateType;
 
   isLoading = false;
   isError = false;
+  channels: any;
 
-
-
-  formData: CreateContactDto = {
+  formData: CreateTemplateType = {
     id: undefined,
-    name: '',
-    username: '',
-    email: '',
-    phone: '',
-    source: '',
+    label: '',
+    channel_id: 0,
   };
 
   constructor(
@@ -76,8 +72,7 @@ export class ContactUpdateComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private toastService: ToastService,
-    private http: HttpClient,
-    private companyService: CompanyService,
+    private channelService: ChannelService,
     private queryClient: QueryClient,
     private userService: UserService,
     private userCompanyService: UserCompanyService,
@@ -85,16 +80,47 @@ export class ContactUpdateComponent implements OnInit {
   ) {}
   ngOnInit(): void {
     // Pré-remplir le formulaire si des données sont fournies
-    if (this.data.contactData) {
+    if (this.data.templateTypeData) {
       this.formData = {
         ...this.formData,
-        ...this.data.contactData,
+        ...this.data.templateTypeData,
       };
     }
-
-    // Charger les entreprises
+    // Charger les canaux
+    this.loadCompanies()
   }
 
+  loadCompanies() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['channelsList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.channelService.getAllChannels());
+      },
+    });
+
+    queryObserver.subscribe((result) => {
+      if (
+        result.status === 'success' &&
+        Array.isArray(result.data)
+      ) {
+        // Assurez-vous que les données sont dans le bon format
+        this.channels = result.data.map((channel: any) => ({
+          id: channel.id,
+          label: channel.label,
+        }));
+        this.isError = false;
+      } else if (result.status === 'error') {
+        this.isError = true;
+        console.error(
+          'Erreur lors du chargement des canaux:',
+          result.error
+        );
+      }
+      this.isLoading = false;
+    });
+    
+  }
 
   submitForm(): void {
       this.modal.destroy(this.formData);

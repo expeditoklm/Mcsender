@@ -1,0 +1,31 @@
+<div class="user-create-form-container">
+  <div class="custom-modal-overlay" (click)="cancel()"></div>
+  <div class="custom-modal-content">
+    <h3 class="form-title">Créer un canal</h3>
+    <form nz-form [nzLayout]="'vertical'" class="user-create-form">
+      <!-- Champ Nom -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'label'">Libellé</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input
+            id="label"
+            [(ngModel)]="formData.label"
+            name="label"
+            placeholder="Entrez le nouveau libellé"
+          />
+        </nz-form-control>
+      </nz-form-item>
+  
+      <!-- Boutons d'action -->
+      <div class="form-buttons">
+        <button nz-button nzType="primary" nzBlock (click)="submitForm()">
+          Enregistrer
+        </button>
+        <button nz-button nzType="default" nzBlock (click)="cancel()">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

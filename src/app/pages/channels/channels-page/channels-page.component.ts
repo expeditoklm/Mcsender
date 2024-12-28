@@ -6,15 +6,17 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
-import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
 import { UserCreateComponent } from '../../users/components/user-create/user-create.component';
-import { User } from '../../users/models/user';
 import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
 import { HttpClient } from '@angular/common/http';
+import { Channel } from '../models/Channel';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { ChannelCreateComponent } from '../components/channel-create/channel-create.component';
+import { ChannelService } from '../services/channel.service';
 
 @Component({
   selector: 'app-channels-page',
@@ -31,9 +33,21 @@ import { HttpClient } from '@angular/common/http';
     NzPaginationModule,
   ],
   templateUrl: './channels-page.component.html',
-  styleUrl: './channels-page.component.css'
+  styleUrl: './channels-page.component.css',
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
 export class ChannelsPageComponent implements OnInit {
+
+   channels: Channel[] = [];
+    filteredChannels: Channel[] = [];
+    isLoading = false;
+    isError = false;
+
 
   constructor(
     private modalService: NzModalService,
@@ -41,121 +55,199 @@ export class ChannelsPageComponent implements OnInit {
     private router: Router,
     private deleteModalService: DeleteModalService,
     private toastService: ToastService,
-    private http: HttpClient
+    private http: HttpClient,
+    private queryClient: QueryClient,
+        private channelService: ChannelService,
+    
   ) {}
 
-  users: User[] = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Employee', username: '123-456', created_at: '2023-01-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Employee', username: '789-012', created_at: '2023-01-02' },
-    { id: 3, name: 'Michael Johnson', email: 'michael@example.com', role: 'Moderator', username: '987-654', created_at: '2023-01-03' }
-  ];
 
-  searchName = '';
-  searchEmail = '';
-  searchRole = '';
+
+  searchLabel = '';
+
 
   pageIndex = 1;
   pageSize = 5;
-  total = this.users.length;
+  total = this.channels.length;
   isModalVisible = false;
   private searchSubject: Subject<void> = new Subject();
 
   ngOnInit() {
+    setTimeout(() => {
+      this.loadChannels();
+    }, 500); // Délai en millisecondesbv
+
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
-      this.applyFilter();
+      this.filterChannels();
     });
-    this.applyFilter();
   }
 
-  // Méthode pour filtrer les utilisateurs en fonction de la route actuelle
-  applyFilter(): void {
-    const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
-    const isInCompanyRoute = this.router.url.includes('/dashboard/users');
+  loadChannels() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['channelsList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.channelService.getAllChannels());
+      },
+    });
 
-    if (isNotInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui ne sont pas dans l'entreprise
-      this.users = this.users.filter(user => user.role !== 'Employee');
-    } else if (isInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui sont dans l'entreprise
-      this.users = this.users.filter(user => user.role === 'Employee');
-    }
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        this.isError = true;
+        console.error('Erreur lors du chargement des canaux:', result.error);
+        this.toastService.showError('Erreur lors du chargement des canaux.');
+      } else {
+        if (
+          result.data &&
+          Array.isArray(result.data)
+        ) {
+          // Si result.data.audiences est défini et est un tableau
+          this.channels = result.data;
+          this.filterChannels(); // Appliquez un filtrage ou une logique additionnelle si nécessaire
+        } else {
+          // Si result.data.audiences est indéfini ou dans un format inattendu
+          console.warn('Format inattendu des données :', result.data);
+          this.channels = []; // Initialisez un tableau vide pour éviter des erreurs plus loin
+        }
 
-    this.total = this.users.length;
+        this.isError = false;
+        this.isLoading = false; // Assurez-vous de stopper le chargement
+      }
+    });
   }
 
-  // Fonction de recherche
-  onSearchChange(): void {
-    this.searchSubject.next();
-  }
 
-  // Filtrage des utilisateurs
-  get filteredUsers(): User[] {
-    const filtered = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-      user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
-      user.role.toLowerCase().includes(this.searchRole.toLowerCase())
-    );
-
+  filterChannels(): void {
+    let filtered = [...this.channels];
+  
+    // Appliquer les filtres
+    filtered = filtered.filter((channel: any) => {
+      const libelle = channel.label?.toLowerCase() || '';
+      // Comparaison pour voir si le label du canal contient le terme de recherche
+      return libelle.includes(this.searchLabel.toLowerCase());
+    });
+  
+    // Mise à jour du nombre total de résultats filtrés
     this.total = filtered.length;
+  
+    // Calcul des éléments à afficher selon la pagination
     const start = (this.pageIndex - 1) * this.pageSize;
-    return filtered.slice(start, start + this.pageSize);
+    this.filteredChannels = filtered.slice(start, start + this.pageSize);
+  
+    this.cdr.detectChanges(); // Nécessaire pour forcer Angular à re-rendre la vue
+  }
+  
+  // Fonction de recherche
+   onSearchChange(): void {
+    this.searchSubject.next();
   }
 
   // Pagination
   onPageIndexChange(pageIndex: number): void {
     this.pageIndex = pageIndex;
+    this.filterChannels();
   }
 
   onPageSizeChange(pageSize: number): void {
     this.pageSize = pageSize;
     this.pageIndex = 1;
+    this.filterChannels();
   }
 
-  // Création d'un utilisateur
-  openUserCreateModal(): void {
-    const modalRef = this.modalService.create({
-      nzTitle: 'Créer un utilisateur',
-      nzContent: UserCreateComponent,
-      nzFooter: null,
-      nzWidth: '600px',
-    });
-
-    modalRef.afterClose.subscribe((result) => {
-      if (result) {
-        console.log('Données reçues :', result);
-        this.users.push(result); // Ajouter l'utilisateur créé
-        this.applyFilter(); // Réappliquer le filtre
+   openChannelCreateModal(channelData?: any): void {
+      const modalRef = this.modalService.create({
+        nzTitle: channelData? 'Modifier le canal':  'Créer un canal' ,
+        nzContent: ChannelCreateComponent,
+        nzFooter: null,
+        nzWidth: '600px',
+        nzData: {
+          channelData: channelData,
+           isEdit: !!channelData,
+        },  
+      });
+      modalRef.afterClose.subscribe((channelDto) => {
+        if (channelDto) {
+          console.log(channelDto)
+          const {
+            id,
+            created_at,
+            updated_at,
+            deleted,
+            ...filteredchannelDto
+          } = channelDto;
+       
+          const operation =  id ? this.channelService.updateChannel(id, filteredchannelDto)
+          :this.channelService.createChannel(filteredchannelDto);
+  
+          operation.subscribe({
+            next: (channel) => {
+              if (channelDto.id) {
+                const index = this.channels.findIndex(
+                  (u) => u.id === channel.id
+                );
+                if (index !== -1) {
+                  this.channels[index] = channel;
+                }
+                this.loadChannels();
+                this.toastService.showSuccess(
+                  'Canal mise à jour avec succès.'
+                );
+              }  else {
+              this.loadChannels();
+              this.toastService.showSuccess('Canal créé avec succès.');
+            }
+            this.filterChannels();
+            },
+            error: (e: any) => {
+              console.error(
+                "Erreur lors de l'opération campagne :",
+                e.error.message
+              );
+              this.toastService.showError(e.error.message);
+            },
+          });
+        }
+      });
+    }
+  
+  
+    openDeleteModal(channel: any) {
+      if (!channel.id) {
+        this.toastService.showError('ID de la campagne non valide');
+        return;
       }
-    });
-  }
+  
+      const modalData = {
+        title: 'Supprimer ce canal ?',
+        message:
+          'Êtes-vous sûr de vouloir supprimer ce canal ? Cette action est irréversible.',
+        confirmText: 'Confirmer',
+        cancelText: 'Annuler',
+        callback: () => this.handleDelete(channel.id!), // Le '!' indique que nous sommes sûrs que l'id existe
+      };
+  
+      this.deleteModalService.openModal(modalData);
+    }
+  
+    handleDelete(channelId: number): void {
+      this.channelService.removeChannel(channelId).subscribe({
+        next: () => {
+          this.channels = this.channels.filter((channel) => channel.id !== channelId);
+          this.filterChannels();
+          this.toastService.showSuccess(
+            `Le canal a été supprimé avec succès.`
+          );
+        },
+        error: (error) => {
+          console.error("Erreur lors de la suppression du canal :", error);
+          this.toastService.showError(
+            "Erreur lors de la suppression du canal "
+          );
+        },
+      });
+    }
+ 
 
-  // Afficher les détails d'un utilisateur
-  viewDetailsUser(user: any): void {
-    this.modalService.create({
-      nzTitle: 'Détails de l\'utilisateur',
-      nzContent: UserDetailsModalComponent,
-      nzData: { user },
-      nzFooter: null
-    });
-  }
-
-  // Modifier un utilisateur
-  editUser(user: any): void {
-    console.log('Modifier l\'utilisateur:', user);
-  }
-
-  // Supprimer un utilisateur
-  deleteUser(user: any): void {
-    this.isModalVisible = true;
-  }
-
-  closeModal(): void {
-    this.isModalVisible = false;
-  }
-
-  confirmDelete(): void {
-    console.log('Utilisateur supprimé');
-    this.closeModal();
-  }
+  
 }

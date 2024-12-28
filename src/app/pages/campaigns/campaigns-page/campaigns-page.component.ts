@@ -214,8 +214,7 @@ export class CampaignsPageComponent implements OnInit {
     
         const { id, created_at, updated_at, deleted,companyLib, ...filteredCampaignDto } = campaignDto;
     
-        const operation = id
-          ? this.campaignService.updateCampaign(id, filteredCampaignDto)
+        const operation = id ? this.campaignService.updateCampaign(id, filteredCampaignDto)
           : this.campaignService.createCampaign(filteredCampaignDto);
   
         operation.subscribe({

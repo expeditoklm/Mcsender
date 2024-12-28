@@ -6,7 +6,13 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject, finalize, firstValueFrom } from 'rxjs';
+import {
+  debounceTime,
+  Subject,
+  finalize,
+  firstValueFrom,
+  Subscription,
+} from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
 import { User } from '../models/user';
@@ -57,33 +63,81 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
     },
   ],
 })
+  export class UsersPageComponent implements OnInit {
+    users: User[] = [];
+    roles = Roles;
+    tabRoles = Object.values(Roles);
+    filteredUsers: User[] = [];
+    isLoading = false;
+    isError = false;
+    searchName = '';
+    searchUserName = '';
+    searchEmail = '';
+    searchRole = '';
+    pageIndex = 1;
+    pageSize = 2;
+    total = 0;
+    isModalVisible = false;
+    private searchSubject: Subject<void> = new Subject();
+    queryObserver: QueryObserver<any>;
+    private subscription: Subscription | null = null;
+    private unsubscribeFn: () => void = () => {};
 
-export class UsersPageComponent implements OnInit {
-  users: User[] = [];
-  roles = Roles;
-  tabRoles = Object.values(Roles);
-  filteredUsers: User[] = [];
-  isLoading = false;
-  isError = false;
-  searchName = '';
-  searchUserName = '';
-  searchEmail = '';
-  searchRole = '';
-  pageIndex = 1;
-  pageSize = 5;
-  total = 0;
-  isModalVisible = false;
-  private searchSubject: Subject<void> = new Subject();
 
-  constructor(
-    private modalService: NzModalService,
-    private cdr: ChangeDetectorRef,
-    private router: Router,
-    private deleteModalService: DeleteModalService,
-    private toastService: ToastService,
-    private userService: UserService,
-    private queryClient: QueryClient
-  ) {}
+    createQueryObserver() {
+      return new QueryObserver<any, Error>(this.queryClient, {
+        queryKey: [
+          'usersList',
+          this.pageIndex,
+          this.pageSize,
+          this.searchName,
+          this.searchUserName,
+          this.searchEmail,
+          this.searchRole,
+        ],
+        queryFn: async (): Promise<any> => {
+          const filters = {
+            searchName: this.searchName,
+            searchUserName: this.searchUserName,
+            searchEmail: this.searchEmail,
+            searchRole: this.searchRole,
+          };
+  
+          try {
+            const response : any= await firstValueFrom(
+              this.userService.findAll(this.pageIndex, this.pageSize, filters)
+            );
+  
+            this.total = response.total;
+            return {
+              data: response.data,
+              total: response.total,
+            };
+          } catch (error) {
+            console.error('Error in queryFn:', error);
+            throw new Error('Invalid data format received');
+          }
+        },
+      });
+    }
+
+
+
+
+
+
+    constructor(
+      private modalService: NzModalService,
+      private cdr: ChangeDetectorRef,
+      private router: Router,
+      private deleteModalService: DeleteModalService,
+      private toastService: ToastService,
+      private userService: UserService,
+      private queryClient: QueryClient
+    ) {
+      this.queryObserver = this.createQueryObserver();
+      
+    }
 
   getRoleLabel(role: string): string {
     switch (role) {
@@ -99,45 +153,79 @@ export class UsersPageComponent implements OnInit {
   }
 
   ngOnInit() {
-    setTimeout(() => {
-      this.loadUsers();
-    }, 500); // Délai en millisecondesbv
+    this.loadUsers();
 
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
-      this.filterUsers();
+      this.loadUsers();
     });
   }
 
   loadUsers() {
     this.isLoading = true;
-    const queryObserver = new QueryObserver<User[]>(this.queryClient, {
-      queryKey: ['usersList'],
-      queryFn: async () => {
-        return await firstValueFrom(this.userService.findAll());
-      },
-    });
-
-    queryObserver.subscribe((result) => {
+    
+    // Désabonner de l'ancien observer si nécessaire
+    if (this.unsubscribeFn) {
+      this.unsubscribeFn();
+    }
+    
+    // Créer et s'abonner au nouvel observer
+    this.queryObserver = this.createQueryObserver();
+    this.unsubscribeFn = this.queryObserver.subscribe((result) => {
       if (result.error) {
         this.isError = true;
-        console.error(
-          'Erreur lors du chargement des utilisateurs:',
-          result.error
-        );
-        this.toastService.showError(
-          'Erreur lors du chargement des utilisateurs.'
-        );
+        this.toastService.showError('Erreur lors du chargement des utilisateurs.');
       } else {
-        this.users = result.data || [];
-        this.filterUsers();
+        this.users = result.data?.data || [];
+        this.total = result.data?.total;
+
+        const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
+        const isInCompanyRoute = this.router.url.includes('/dashboard/users');
+
+        let filtered = [...this.users];
+
+        // if (isNotInCompanyRoute) {
+        //   filtered = filtered.filter((user) => user.role === Roles.USER);
+        // } else if (isInCompanyRoute) {
+        //   filtered = filtered.filter(
+        //     (user) => user.role === Roles.ADMIN || user.role === Roles.SUPER_ADMIN
+        //   );
+        // }
+
+        this.filteredUsers = filtered;
         this.isError = false;
         this.isLoading = result.isFetching;
+        this.cdr.detectChanges();
       }
     });
   }
 
-  filterUsers(): void {
+  onPageIndexChange(pageIndex: number): void {
+    this.pageIndex = pageIndex;
+    this.loadUsers();
+  }
+
+  onPageSizeChange(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.pageIndex = 1;
+    this.loadUsers();
+  }
+
+  
+
+  handleResult(result: any) {
+    if (result.error) {
+      this.isError = true;
+      this.isLoading = false;
+      this.toastService.showError(
+        'Erreur lors du chargement des utilisateurs.'
+      );
+      return;
+    }
+
+    this.users = result.data?.data || [];
+    this.total = result.data?.total || 0;
+
     const isNotInCompanyRoute = this.router.url.includes(
       '/dashboard/users-not-in-company'
     );
@@ -145,45 +233,33 @@ export class UsersPageComponent implements OnInit {
 
     let filtered = [...this.users];
 
-    // Filtrage par route
     if (isNotInCompanyRoute) {
       filtered = filtered.filter((user) => user.role === Roles.USER);
     } else if (isInCompanyRoute) {
       filtered = filtered.filter(
-        (user) => user.role == Roles.ADMIN || user.role == Roles.SUPER_ADMIN
+        (user) => user.role === Roles.ADMIN || user.role === Roles.SUPER_ADMIN
       );
     }
 
-    // Filtrage par recherche
-    filtered = filtered.filter(
-      (user) =>
-        user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-        user.username
-          .toLowerCase()
-          .includes(this.searchUserName.toLowerCase()) &&
-        user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
-        user.role.toLowerCase().includes(this.searchRole.toLowerCase())
-    );
-
-    this.total = filtered.length;
     const start = (this.pageIndex - 1) * this.pageSize;
     this.filteredUsers = filtered.slice(start, start + this.pageSize);
+
+    this.isError = false;
+    this.isLoading = false;
   }
 
   onSearchChange(): void {
     this.searchSubject.next();
   }
 
-  onPageIndexChange(pageIndex: number): void {
-    this.pageIndex = pageIndex;
-    this.filterUsers();
+
+  ngOnDestroy() {
+    // Nettoyage de l'abonnement
+    if (this.unsubscribeFn) {
+      this.unsubscribeFn();
+    }
   }
 
-  onPageSizeChange(pageSize: number): void {
-    this.pageSize = pageSize;
-    this.pageIndex = 1;
-    this.filterUsers();
-  }
 
   openUserCreateModal(userData?: any): void {
     const modalRef = this.modalService.create({
@@ -231,7 +307,7 @@ export class UsersPageComponent implements OnInit {
               this.users.push(user);
               this.toastService.showSuccess('Utilisateur créé avec succès.');
             }
-            this.filterUsers();
+            this.loadUsers();
           },
           error: (error) => {
             console.error(
@@ -293,11 +369,14 @@ export class UsersPageComponent implements OnInit {
     this.deleteModalService.openModal(modalData);
   }
 
+  
+ 
+
   handleDelete(userId: number): void {
     this.userService.remove(userId).subscribe({
       next: () => {
         this.users = this.users.filter((user) => user.id !== userId);
-        this.filterUsers();
+        this.loadUsers();
         this.toastService.showSuccess(
           `L'utilisateur a été supprimé avec succès.`
         );
@@ -335,10 +414,5 @@ export class UsersPageComponent implements OnInit {
         };
       }
     });
-  }
-
-  ngOnDestroy() {
-    // Nettoyage du Subject pour éviter les fuites de mémoire
-    this.searchSubject.complete();
   }
 }

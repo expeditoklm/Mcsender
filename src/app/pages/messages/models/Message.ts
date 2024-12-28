@@ -1,7 +1,19 @@
+// models/message.model.ts
 export interface Message {
-    object?: string;         // Optional property
-    content?: string;        // Optional property
-    status?: Record<string, any>; // Optional object with dynamic properties
-    campaign_id?: number;    // Optional property
-    audience_id?: number;    // Optional property
-}
+    id?: number;
+    object?: string;
+    content: string;
+    status: MessageStatus;
+    company_id: number;
+    campaign_id: number;
+    audience_id: number;
+    companyLib?: string;
+    scheduledDate?: Date;
+  }
+
+  export enum MessageStatus {
+    SENT = 'SENT',
+    PENDING = 'PENDING',
+    FAILED = 'FAILED',
+    SCHEDULED = 'SCHEDULED',
+  }

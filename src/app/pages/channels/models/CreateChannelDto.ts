@@ -1,5 +1,4 @@
-export interface Channel {
-    id?: number;
+export interface CreateChannelDto {
     label: string;
     deleted?: boolean;
   }

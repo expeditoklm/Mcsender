@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, Observable, retry, throwError } from 'rxjs';
@@ -43,11 +43,35 @@ export class UserService {
   }
 
   // Récupérer tous les utilisateurs
-  findAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.baseUrl, { headers: this.headers })
+  findAll(page: number, pageSize: number, filters: any): Observable<User[]> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
+      if (filters.searchName) {
+        params = params.set('searchName', filters.searchName);
+      }
+      if (filters.searchUserName) {
+        params = params.set('searchUserName', filters.searchUserName);
+      }
+      if (filters.searchEmail) {
+        params = params.set('searchEmail', filters.searchEmail);
+      }
+      if (filters.searchRole) {
+        params = params.set('searchRole', filters.searchRole);
+      }
+
+
+/*************  ✨ Codeium Command ⭐  *************/
+  /**
+   * Constructor.
+   * Initialize the query observer.
+   * @param http The HttpClient injected.
+   * @param router The Router injected.
+   * @param queryClient The QueryClient injected.
+   */
+/******  89e23e40-6d03-4fb8-9e97-598c637d23e5  *******/    return this.http.get<User[]>(this.baseUrl,  { params})
       .pipe(
         retry(1),
-        catchError(this.handleError)
       );
   }
 

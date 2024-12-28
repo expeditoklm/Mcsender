@@ -13,8 +13,6 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
-import { Roles } from '../../../../consts/role';
 import { Router } from '@angular/router';
 import { ToastService } from '../../../../consts/components/toast/toast.service';
 import { HttpClient } from '@angular/common/http';
@@ -22,14 +20,15 @@ import { CompanyService } from '../../../companies/services/company.service';
 import { QueryClient, QueryObserver } from '@tanstack/query-core';
 import { UserService } from '../../../users/services/user.service';
 import { UserCompanyService } from '../../../users/services/userCompany.service';
-import { Company } from '../../../companies/models/company';
-import { firstValueFrom } from 'rxjs';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
-import { CreateCompanyDto } from '../../../companies/models/createCompanyDto';
-import { CreateContactDto } from '../../models/CreateContactDto';
+import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { firstValueFrom } from 'rxjs';
+import { CreateTemplateType } from '../../../template-types/models/CreateTemplateType';
+import { CreateTemplate } from '../../models/CreateTemplate';
+import { TemplateTypeService } from '../../../template-types/services/template-type.service';
 
 @Component({
-  selector: 'app-contact-update',
+  selector: 'app-template-create',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -44,9 +43,11 @@ import { CreateContactDto } from '../../models/CreateContactDto';
     NzFormModule,
     NzGridModule,
     NzDatePickerModule,
+    NzOptionComponent,
+    NzSelectComponent,
   ],
-  templateUrl: './contact-update.component.html',
-  styleUrl: './contact-update.component.css',
+  templateUrl: './template-create.component.html',
+  styleUrl: './template-create.component.css',
   providers: [
     {
       provide: QueryClient,
@@ -54,21 +55,18 @@ import { CreateContactDto } from '../../models/CreateContactDto';
     },
   ],
 })
-export class ContactUpdateComponent implements OnInit {
-  @Input() contactData?: CreateContactDto;
+export class templateCreateComponent implements OnInit {
+  @Input() templateData?: CreateTemplate;
 
   isLoading = false;
   isError = false;
+  templateTypes: any;
 
-
-
-  formData: CreateContactDto = {
+  formData: CreateTemplate = {
     id: undefined,
     name: '',
-    username: '',
-    email: '',
-    phone: '',
-    source: '',
+    content: '',
+    template_type_id: 0,
   };
 
   constructor(
@@ -76,8 +74,7 @@ export class ContactUpdateComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private toastService: ToastService,
-    private http: HttpClient,
-    private companyService: CompanyService,
+    private templateTypeService: TemplateTypeService,
     private queryClient: QueryClient,
     private userService: UserService,
     private userCompanyService: UserCompanyService,
@@ -85,16 +82,47 @@ export class ContactUpdateComponent implements OnInit {
   ) {}
   ngOnInit(): void {
     // Pré-remplir le formulaire si des données sont fournies
-    if (this.data.contactData) {
+    if (this.data.templateData) {
       this.formData = {
         ...this.formData,
-        ...this.data.contactData,
+        ...this.data.templateData,
       };
     }
-
-    // Charger les entreprises
+    // Charger les canaux
+    this.loadTemplateType()
   }
 
+  loadTemplateType() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['templateTypeList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.templateTypeService.getAllTemplateTypes());
+      },
+    });
+
+    queryObserver.subscribe((result) => {
+      if (
+        result.status === 'success' &&
+        Array.isArray(result.data)
+      ) {
+        // Assurez-vous que les données sont dans le bon format
+        this.templateTypes = result.data.map((templateType: any) => ({
+          id: templateType.id,
+          label: templateType.label,
+        }));
+        this.isError = false;
+      } else if (result.status === 'error') {
+        this.isError = true;
+        console.error(
+          'Erreur lors du chargement des template Types:',
+          result.error
+        );
+      }
+      this.isLoading = false;
+    });
+    
+  }
 
   submitForm(): void {
       this.modal.destroy(this.formData);

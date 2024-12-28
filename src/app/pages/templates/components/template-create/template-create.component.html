@@ -1,0 +1,75 @@
+<div class="user-create-form-container">
+  <div class="custom-modal-overlay" (click)="cancel()"></div>
+  <div class="custom-modal-content">
+    <h3 class="form-title">Créer un template</h3>
+    <form nz-form [nzLayout]="'vertical'" class="user-create-form">
+      <!-- Champ Nom -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'name'">Libellé</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input  
+            id="name"
+            [(ngModel)]="formData.name"
+            name="name"
+            placeholder="Entrez le nouveau libellé"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+
+      <nz-form-item>
+        <nz-form-label [nzFor]="'content'">Contenu</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <input
+            nz-input  
+            id="content"
+            [(ngModel)]="formData.content"
+            name="content"
+            placeholder="Entrez le nouveau libellé"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+
+      <!-- Sélecteur Entreprise -->
+      <nz-form-item>
+        <nz-form-label [nzFor]="'template_type_id'">Type de template</nz-form-label>
+        <nz-form-control nzHasFeedback>
+          <nz-select
+            id="template_type_id"
+            [(ngModel)]="formData.template_type_id"
+            name="template_type_id"
+            nzPlaceHolder="Choisir un type de template"
+            [nzLoading]="isLoading"
+            [disabled]="isLoading || isError"
+            required
+          >
+            <nz-option
+              *ngFor="let templateType of templateTypes || []"
+              [nzValue]="templateType.id"
+              [nzLabel]="templateType.label"
+            ></nz-option>
+          </nz-select>
+
+          <!-- Message d'erreur -->
+          <div *ngIf="isError" class="error-message">
+            Erreur lors du chargement des types de template. Veuillez réessayer plus
+            tard.
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+  
+      <!-- Boutons d'action -->
+      <div class="form-buttons">
+        <button nz-button nzType="primary" nzBlock (click)="submitForm()">
+          Enregistrer
+        </button>
+        <button nz-button nzType="default" nzBlock (click)="cancel()">
+          Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

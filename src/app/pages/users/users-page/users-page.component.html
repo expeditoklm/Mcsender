@@ -37,12 +37,8 @@
   [nzData]="filteredUsers"
   [nzScroll]="{ x: '100%', y: '500px' }"
   [nzBordered]="true"
-  [nzPageIndex]="pageIndex"
-  [nzPageSize]="pageSize"
-  [nzTotal]="total"
+  [nzFrontPagination]="false"
   [nzShowPagination]="false"
-  (nzPageIndexChange)="onPageIndexChange($event)"
-  (nzPageSizeChange)="onPageSizeChange($event)"
 >
   <thead>
     <tr>

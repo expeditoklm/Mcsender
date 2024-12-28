@@ -6,15 +6,21 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
 import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
-import { UserCreateComponent } from '../../users/components/user-create/user-create.component';
-import { User } from '../../users/models/user';
-import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
 import { HttpClient } from '@angular/common/http';
+import { Message, MessageStatus } from '../models/Message';
+import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { MessageCreateComponent } from '../components/message-create/message-create.component';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { MessageService } from '../services/message.service';
+import { CompanyService } from '../../companies/services/company.service';
+import { Company } from '../../companies/models/company';
+import { CampaignService } from '../../campaigns/services/campaign.service';
+import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 
 @Component({
   selector: 'app-messages-page',
@@ -29,10 +35,19 @@ import { HttpClient } from '@angular/common/http';
     NzIconModule,
     FormsModule,
     NzPaginationModule,
+     NzSelectComponent,
+     NzOptionComponent,
   ],
   templateUrl: './messages-page.component.html',
-  styleUrl: './messages-page.component.css'
+  styleUrl: './messages-page.component.css',
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
+
 export class MessagesPageComponent implements OnInit {
 
   constructor(
@@ -41,47 +56,60 @@ export class MessagesPageComponent implements OnInit {
     private router: Router,
     private deleteModalService: DeleteModalService,
     private toastService: ToastService,
+    private messageService: MessageService,
+    private companyService: CompanyService,
+    private campaignService: CampaignService,
+    private queryClient: QueryClient,
     private http: HttpClient
   ) {}
+  MessageStatus = MessageStatus;
+  tabStatus = Object.values(MessageStatus);
+  companies: Company[] = [];
+  
 
-  users: User[] = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'PENDING', username: '123-456', created_at: '2023-01-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'SENT', username: '789-012', created_at: '2023-01-02' },
-    { id: 3, name: 'Michael Johnson', email: 'michael@example.com', role: 'FAILED', username: '987-654', created_at: '2023-01-03' }
-  ];
-
-  searchName = '';
-  searchEmail = '';
-  searchRole = '';
-
-  pageIndex = 1;
-  pageSize = 5;
-  total = this.users.length;
-  isModalVisible = false;
-  private searchSubject: Subject<void> = new Subject();
-
-  ngOnInit() {
-    this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
-      this.pageIndex = 1;
-      // this.applyFilter();
-    });
-    // this.applyFilter();
+  getStatusLabel(MsgStatus: string): string {
+    switch (MsgStatus) {
+      case MessageStatus.PENDING:
+        return 'En cours';
+      case MessageStatus.SENT:
+        return 'Envoyer';
+      case MessageStatus.FAILED:
+        return 'Echouer';
+      case MessageStatus.SCHEDULED:
+        return 'Programmer';
+      default:
+        return MsgStatus;
+    }
   }
 
-  // Méthode pour filtrer les utilisateurs en fonction de la route actuelle
-  applyFilter(): void {
-    const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
-    const isInCompanyRoute = this.router.url.includes('/dashboard/users');
+    messages: Message[] = [];
+    filteredMessage: Message[] = [];
+    
+    isLoading = false;
+    isError = false;
 
-    if (isNotInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui ne sont pas dans l'entreprise
-      this.users = this.users.filter(user => user.role !== 'Employee');
-    } else if (isInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui sont dans l'entreprise
-      this.users = this.users.filter(user => user.role === 'Employee');
-    }
+    pageIndex = 1;
+    pageSize = 5;
+    total = this.messages.length;
+    isModalVisible = false;
+    private searchSubject: Subject<void> = new Subject();
+  
+  searchObjet = '';
+  searchContent = '';
+  searchCompany = '';
+  searchStatus = '';
 
-    this.total = this.users.length;
+
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.loadMessages();
+    }, 500); // Délai en millisecondes
+
+    this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
+      this.pageIndex = 1;
+      this.filterMessages();
+    });
+    this.loadCompanies()
   }
 
   // Fonction de recherche
@@ -89,46 +117,212 @@ export class MessagesPageComponent implements OnInit {
     this.searchSubject.next();
   }
 
-  // Filtrage des utilisateurs
-  get filteredUsers(): User[] {
-    const filtered = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-      user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
-      user.role.toLowerCase().includes(this.searchRole.toLowerCase())
-    );
-
-    this.total = filtered.length;
-    const start = (this.pageIndex - 1) * this.pageSize;
-    return filtered.slice(start, start + this.pageSize);
-  }
-
-  // Pagination
-  onPageIndexChange(pageIndex: number): void {
-    this.pageIndex = pageIndex;
-  }
-
-  onPageSizeChange(pageSize: number): void {
-    this.pageSize = pageSize;
-    this.pageIndex = 1;
-  }
-
-  // Création d'un utilisateur
-  openUserCreateModal(): void {
-    const modalRef = this.modalService.create({
-      nzTitle: 'Créer un utilisateur',
-      nzContent: UserCreateComponent,
-      nzFooter: null,
-      nzWidth: '600px',
+  loadCompanies() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['companiesList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.companyService.getAllCompanies());
+      },
     });
 
-    modalRef.afterClose.subscribe((result) => {
-      if (result) {
-        console.log('Données reçues :', result);
-        this.users.push(result); // Ajouter l'utilisateur créé
-        this.applyFilter(); // Réappliquer le filtre
+    queryObserver.subscribe((result) => {
+      if (
+        result.status === 'success' &&
+        Array.isArray(result.data?.companies)
+      ) {
+        this.companies = result.data.companies; // Assignation correcte
+        this.isError = false;
+      } else if (result.status === 'error') {
+        this.isError = true;
+        console.error(
+          'Erreur lors du chargement des entreprises:',
+          result.error
+        );
+      }
+      this.isLoading = false;
+    });
+  }
+  
+
+  loadMessages() {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['messagesList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.messageService.getAllMessages());
+      },
+    });
+
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        this.isError = true;
+        console.error('Erreur lors du chargement des messages:', result.error);
+        this.toastService.showError('Erreur lors du chargement des messages.');
+      } else {
+        this.messages = result.data || [];
+        this.filterMessages();
+        this.isError = false;
+        this.isLoading = result.isFetching;
       }
     });
   }
+
+  filterMessages(): void {
+    let filtered = [...this.messages];
+    console.log("filtered",filtered)
+
+    // Fonction asynchrone pour récupérer le nom de la compagnie
+    const fetchCompanyName = async (campaignId: number): Promise<string> => {
+      console.log("campaignId",campaignId)
+
+      try {
+        const campaign = await firstValueFrom(
+          this.campaignService.findOne(campaignId)
+        );
+        console.log("campaign",campaign)
+
+        const company = await firstValueFrom(
+          this.companyService.getCompanyById(campaign.company_id)
+        );
+        console.log("company",company)
+        return company?.name || '';
+      } catch (error) {
+        
+        console.error(
+          `Erreur lors de la récupération de la compagnie avec ID ${campaignId}`,
+          error
+        );
+        return '';
+      }
+    };
+
+    // Appliquer les filtres
+    const filterAsync = async () => {
+      const promises = filtered.map(async (message) => {
+        const companyLib = await fetchCompanyName(message.company_id);
+
+        const object = message.object?.toLowerCase() || '';
+        const content = message.content?.toString().toLowerCase() || '';
+        const status = message.status?.toString().toLowerCase() || '';
+
+        const matchesFilters =
+        object.includes(this.searchObjet.toLowerCase()) &&
+        content.includes(this.searchContent.toLowerCase()) &&
+        status.includes(this.searchStatus.toLowerCase()) &&
+          companyLib.toLowerCase().includes(this.searchCompany.toLowerCase()) &&
+          status.includes(this.searchStatus.toLowerCase());
+
+        if (matchesFilters) {
+          return { ...message, companyLib }; // Ajoutez le nom de la compagnie
+        }
+
+        return null;
+      });
+
+      const filteredResults = await Promise.all(promises);
+      const finalFiltered = filteredResults.filter((result) => result !== null);
+
+      this.total = finalFiltered.length;
+
+      const start = (this.pageIndex - 1) * this.pageSize;
+      this.filteredMessage = finalFiltered.slice(
+        start,
+        start + this.pageSize
+      );
+      this.cdr.detectChanges(); // Nécessaire pour forcer Angular à re-rendre la vue
+    };
+
+    filterAsync().catch((error) =>
+      console.error('Erreur lors du filtrage des campagnes :', error)
+    );
+  }
+  
+   // Pagination
+    onPageIndexChange(pageIndex: number): void {
+      this.pageIndex = pageIndex;
+      this.filterMessages();
+    }
+  
+    onPageSizeChange(pageSize: number): void {
+      this.pageSize = pageSize;
+      this.pageIndex = 1;
+      this.filterMessages();
+    }
+  
+    openMessageCreateModal(messageData?: Message): void {
+      const modalRef = this.modalService.create({
+        nzTitle: messageData ? 'Modifier le message' : 'Créer un message',
+        nzContent: MessageCreateComponent,
+        nzFooter: null,
+        nzWidth: '600px',
+        nzData: {
+          messageData: messageData,
+          isEdit: !!messageData,
+        },
+      });
+  
+      modalRef.afterClose.subscribe((messageDto) => {
+        if (messageDto) {
+          const { id, created_at, updated_at, deleted,channelLib,templates, ...filteredmessageDto } = messageDto;
+          const operation = id
+            ? this.messageService.updateMessage(id, filteredmessageDto)
+            : this.messageService.createMessage(filteredmessageDto);
+  
+          operation.subscribe({
+            next: (message) => {
+              if (messageDto.id) {
+                const index = this.messages.findIndex((u) => u.id === message.id);
+                if (index !== -1) {
+                  this.messages[index] = message;
+                }
+                this.loadMessages();
+                this.toastService.showSuccess('message mis à jour avec succès.');
+              } else {
+                this.loadMessages();
+                this.toastService.showSuccess('message créé avec succès.');
+              }
+              this.filterMessages();
+            },
+            error: (e: any) => {
+              console.error("Erreur lors de l'opération message:", e.error.message);
+              this.toastService.showError(e.error.message);
+            },
+          });
+        }
+      });
+    }
+  
+    openDeleteModal(message: any): void {
+      if (!message.id) {
+        this.toastService.showError('ID du message non valide');
+        return;
+      }
+  
+      const modalData = {
+        title: 'Supprimer ce message?',
+        message: 'Êtes-vous sûr de vouloir supprimer ce message? Cette action est irréversible.',
+        confirmText: 'Confirmer',
+        cancelText: 'Annuler',
+        callback: () => this.handleDelete(message.id), // Le '!' indique que nous sommes sûrs que l'id existe
+      };
+  
+      this.deleteModalService.openModal(modalData);
+    }
+  
+    handleDelete(messageId: number): void {
+      this.messageService.deleteMessage(messageId).subscribe({
+        next: () => {
+          this.messages = this.messages.filter((templateType) => templateType.id !== messageId);
+          this.filterMessages();
+          this.toastService.showSuccess('Le messagea été supprimé avec succès.');
+        },
+        error: (error) => {
+          console.error("Erreur lors de la suppression du message:", error);
+          this.toastService.showError("Erreur lors de la suppression du type de modèle");
+        },
+      });
+    }
 
   // Afficher les détails d'un utilisateur
   viewDetailsUser(user: any): void {
@@ -140,22 +334,4 @@ export class MessagesPageComponent implements OnInit {
     });
   }
 
-  // Modifier un utilisateur
-  editUser(user: any): void {
-    console.log('Modifier l\'utilisateur:', user);
-  }
-
-  // Supprimer un utilisateur
-  deleteUser(user: any): void {
-    this.isModalVisible = true;
-  }
-
-  closeModal(): void {
-    this.isModalVisible = false;
-  }
-
-  confirmDelete(): void {
-    console.log('Utilisateur supprimé');
-    this.closeModal();
-  }
 }

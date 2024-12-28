@@ -6,15 +6,17 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule } from '@angular/forms';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { Router, RouterModule } from '@angular/router';
-import { UserDetailsModalComponent } from '../../users/components/user-details-modal/user-details-modal.component';
-import { UserCreateComponent } from '../../users/components/user-create/user-create.component';
-import { User } from '../../users/models/user';
+import { TemplateService } from '../services/template.service';
 import { DeleteModalService } from '../../../consts/components/delete-modal/delete-modal.service';
 import { ToastService } from '../../../consts/components/toast/toast.service';
-import { HttpClient } from '@angular/common/http';
+import { CreateTemplate } from '../models/CreateTemplate';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
+import { TemplateTypeService } from '../../template-types/services/template-type.service';
+import { templateCreateComponent } from '../components/template-create/template-create.component';
+
 @Component({
   selector: 'app-templates-page',
   standalone: true,
@@ -30,9 +32,27 @@ import { HttpClient } from '@angular/common/http';
     NzPaginationModule,
   ],
   templateUrl: './templates-page.component.html',
-  styleUrl: './templates-page.component.css'
+  styleUrls: ['./templates-page.component.css'],
+  providers: [
+    {
+      provide: QueryClient,
+      useFactory: () => new QueryClient(),
+    },
+  ],
 })
 export class TemplatesPageComponent implements OnInit {
+  templates: CreateTemplate[] = [];
+  filteredTemplates: CreateTemplate[] = [];
+
+  isLoading = false;
+  isError = false;
+
+  searchName = '';
+  searchTemplateType = '';
+  pageIndex = 1;
+  pageSize = 5;
+  total = this.templates.length;
+  private searchSubject: Subject<void> = new Subject();
 
   constructor(
     private modalService: NzModalService,
@@ -40,121 +60,184 @@ export class TemplatesPageComponent implements OnInit {
     private router: Router,
     private deleteModalService: DeleteModalService,
     private toastService: ToastService,
-    private http: HttpClient
+    private queryClient: QueryClient,
+    private templateTypeService: TemplateTypeService,
+
+    private templateService: TemplateService
   ) {}
 
-  users: User[] = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Employee', username: '123-456', created_at: '2023-01-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Employee', username: '789-012', created_at: '2023-01-02' },
-    { id: 3, name: 'Michael Johnson', email: 'michael@example.com', role: 'Moderator', username: '987-654', created_at: '2023-01-03' }
-  ];
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.loadTemplates();
+    }, 500);
 
-  searchName = '';
-  searchEmail = '';
-  searchRole = '';
-
-  pageIndex = 1;
-  pageSize = 5;
-  total = this.users.length;
-  isModalVisible = false;
-  private searchSubject: Subject<void> = new Subject();
-
-  ngOnInit() {
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
-      this.applyFilter();
+      this.filterTemplates();
     });
-    this.applyFilter();
   }
 
-  // Méthode pour filtrer les utilisateurs en fonction de la route actuelle
-  applyFilter(): void {
-    const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
-    const isInCompanyRoute = this.router.url.includes('/dashboard/users');
+  loadTemplates(): void {
+    this.isLoading = true;
+    const queryObserver = new QueryObserver<any>(this.queryClient, {
+      queryKey: ['templatesList'],
+      queryFn: async () => {
+        return await firstValueFrom(this.templateService.getAllTemplates());
+      },
+    });
 
-    if (isNotInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui ne sont pas dans l'entreprise
-      this.users = this.users.filter(user => user.role !== 'Employee');
-    } else if (isInCompanyRoute) {
-      // Filtrer uniquement les utilisateurs qui sont dans l'entreprise
-      this.users = this.users.filter(user => user.role === 'Employee');
-    }
-
-    this.total = this.users.length;
+    queryObserver.subscribe((result) => {
+      if (result.error) {
+        this.isError = true;
+        console.error('Erreur lors du chargement des templates:', result.error);
+        this.toastService.showError('Erreur lors du chargement des templates.');
+      } else {
+        this.templates = result.data || [];
+        this.filterTemplates();
+        this.isError = false;
+        this.isLoading = result.isFetching;
+      }
+    });
   }
 
-  // Fonction de recherche
+  filterTemplates(): void {
+    let filtered = [...this.templates];
+
+    // Fonction asynchrone pour récupérer le nom de la compagnie
+    const fetchTemplateTypeName = async (templateTypeId: number): Promise<string> => {
+      try {
+        const templateType : any = await firstValueFrom(
+          this.templateTypeService.getTemplateTypeById(templateTypeId)
+        );
+        return templateType?.label || '';
+      } catch (error) {
+        
+        console.error(
+          `Erreur lors de la récupération de la compagnie avec ID ${templateTypeId}`,
+          error
+        );
+        return '';
+      }
+    };
+
+    // Appliquer les filtres
+    const filterAsync = async () => {
+      const promises = filtered.map(async (template) => {
+        const templateTypeLib = await fetchTemplateTypeName(template.template_type_id);
+
+        const name = template.name?.toLowerCase() || '';
+        const content = template.content?.toLowerCase() || '';
+
+        const matchesFilters =
+        name.includes(this.searchName.toLowerCase()) &&
+        templateTypeLib.toLowerCase().includes(this.searchTemplateType.toLowerCase()) 
+
+        if (matchesFilters) {
+          return { ...template, templateTypeLib }; // Ajoutez le nom de la compagnie
+        }
+
+        return null;
+      });
+
+      const filteredResults = await Promise.all(promises);
+      const finalFiltered = filteredResults.filter((result) => result !== null);
+
+      this.total = finalFiltered.length;
+
+      const start = (this.pageIndex - 1) * this.pageSize;
+      this.filteredTemplates = finalFiltered.slice(
+        start,
+        start + this.pageSize
+      );
+      this.cdr.detectChanges(); // Nécessaire pour forcer Angular à re-rendre la vue
+    };
+
+    filterAsync().catch((error) =>
+      console.error('Erreur lors du filtrage des campagnes :', error)
+    );
+  }
+
   onSearchChange(): void {
     this.searchSubject.next();
   }
 
-  // Filtrage des utilisateurs
-  get filteredUsers(): User[] {
-    const filtered = this.users.filter(user =>
-      user.name.toLowerCase().includes(this.searchName.toLowerCase()) &&
-      user.email.toLowerCase().includes(this.searchEmail.toLowerCase()) &&
-      user.role.toLowerCase().includes(this.searchRole.toLowerCase())
-    );
-
-    this.total = filtered.length;
-    const start = (this.pageIndex - 1) * this.pageSize;
-    return filtered.slice(start, start + this.pageSize);
-  }
-
-  // Pagination
   onPageIndexChange(pageIndex: number): void {
     this.pageIndex = pageIndex;
+    this.filterTemplates();
   }
 
   onPageSizeChange(pageSize: number): void {
     this.pageSize = pageSize;
     this.pageIndex = 1;
+    this.filterTemplates();
   }
 
-  // Création d'un utilisateur
-  openUserCreateModal(): void {
+  openTemplateCreateModal(templateData?: CreateTemplate): void {
     const modalRef = this.modalService.create({
-      nzTitle: 'Créer un utilisateur',
-      nzContent: UserCreateComponent,
+      nzTitle: templateData ? 'Modifier le template' : 'Créer un template',
+      nzContent: templateCreateComponent, // Remplacez par le composant réel pour créer/éditer
       nzFooter: null,
       nzWidth: '600px',
+      nzData: {
+        templateData: templateData,
+        isEdit: !!templateData,
+      },
     });
 
-    modalRef.afterClose.subscribe((result) => {
-      if (result) {
-        console.log('Données reçues :', result);
-        this.users.push(result); // Ajouter l'utilisateur créé
-        this.applyFilter(); // Réappliquer le filtre
+    modalRef.afterClose.subscribe((templateDto) => {
+      if (templateDto) {
+        const { id, created_at, updated_at, deleted,templateTypeLib,templates,templateType, ...filteredTemplateDto } = templateDto;
+
+        const operation = id
+          ? this.templateService.updateTemplate(id, filteredTemplateDto)
+          : this.templateService.createTemplate(filteredTemplateDto);
+
+        operation.subscribe({
+          next: () => {
+            this.loadTemplates();
+            this.toastService.showSuccess(
+              templateDto.id
+                ? 'Template mis à jour avec succès.'
+                : 'Template créé avec succès.'
+            );
+          },
+          error: (e: any) => {
+            console.error('Erreur lors de l\'opération sur le template :', e);
+            this.toastService.showError('Erreur lors de l\'opération.');
+          },
+        });
       }
     });
   }
 
-  // Afficher les détails d'un utilisateur
-  viewDetailsUser(user: any): void {
-    this.modalService.create({
-      nzTitle: 'Détails de l\'utilisateur',
-      nzContent: UserDetailsModalComponent,
-      nzData: { user },
-      nzFooter: null
+  openDeleteModal(template: any): void {
+    if (!template.id) {
+      this.toastService.showError('ID du template non valide');
+      return;
+    }
+
+    const modalData = {
+      title: 'Supprimer ce template ?',
+      message: 'Êtes-vous sûr de vouloir supprimer ce template ? Cette action est irréversible.',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+      callback: () => this.handleDelete(template.id),
+    };
+
+    this.deleteModalService.openModal(modalData);
+  }
+
+  handleDelete(templateId: number): void {
+    this.templateService.deleteTemplate(templateId).subscribe({
+      next: () => {
+        this.templates = this.templates.filter((template) => template.id !== templateId);
+        this.filterTemplates();
+        this.toastService.showSuccess('Template supprimé avec succès.');
+      },
+      error: (error) => {
+        console.error('Erreur lors de la suppression du template :', error);
+        this.toastService.showError('Erreur lors de la suppression.');
+      },
     });
-  }
-
-  // Modifier un utilisateur
-  editUser(user: any): void {
-    console.log('Modifier l\'utilisateur:', user);
-  }
-
-  // Supprimer un utilisateur
-  deleteUser(user: any): void {
-    this.isModalVisible = true;
-  }
-
-  closeModal(): void {
-    this.isModalVisible = false;
-  }
-
-  confirmDelete(): void {
-    console.log('Utilisateur supprimé');
-    this.closeModal();
   }
 }
