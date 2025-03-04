@@ -79,47 +79,12 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
     total = 0;
     isModalVisible = false;
     private searchSubject: Subject<void> = new Subject();
-    queryObserver: QueryObserver<any>;
+    private queryObserver?: QueryObserver<any>;
     private subscription: Subscription | null = null;
     private unsubscribeFn: () => void = () => {};
 
 
-    createQueryObserver() {
-      return new QueryObserver<any, Error>(this.queryClient, {
-        queryKey: [
-          'usersList',
-          this.pageIndex,
-          this.pageSize,
-          this.searchName,
-          this.searchUserName,
-          this.searchEmail,
-          this.searchRole,
-        ],
-        queryFn: async (): Promise<any> => {
-          const filters = {
-            searchName: this.searchName,
-            searchUserName: this.searchUserName,
-            searchEmail: this.searchEmail,
-            searchRole: this.searchRole,
-          };
   
-          try {
-            const response : any= await firstValueFrom(
-              this.userService.findAll(this.pageIndex, this.pageSize, filters)
-            );
-  
-            this.total = response.total;
-            return {
-              data: response.data,
-              total: response.total,
-            };
-          } catch (error) {
-            console.error('Error in queryFn:', error);
-            throw new Error('Invalid data format received');
-          }
-        },
-      });
-    }
 
 
 
@@ -135,7 +100,6 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
       private userService: UserService,
       private queryClient: QueryClient
     ) {
-      this.queryObserver = this.createQueryObserver();
       
     }
 
@@ -155,6 +119,9 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
   ngOnInit() {
     this.loadUsers();
 
+    this.setupSearchDebounce();
+  }
+  private setupSearchDebounce() {
     this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
       this.pageIndex = 1;
       this.loadUsers();
@@ -164,13 +131,19 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
   loadUsers() {
     this.isLoading = true;
     
-    // Désabonner de l'ancien observer si nécessaire
     if (this.unsubscribeFn) {
       this.unsubscribeFn();
     }
-    
-    // Créer et s'abonner au nouvel observer
-    this.queryObserver = this.createQueryObserver();
+
+    this.queryObserver = this.userService.createUsersQueryObserver({
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+      searchName: this.searchName,
+      searchUserName: this.searchUserName,
+      searchEmail: this.searchEmail,
+      searchRole: this.searchRole
+    });
+
     this.unsubscribeFn = this.queryObserver.subscribe((result) => {
       if (result.error) {
         this.isError = true;
@@ -178,21 +151,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
       } else {
         this.users = result.data?.data || [];
         this.total = result.data?.total;
-
-        const isNotInCompanyRoute = this.router.url.includes('/dashboard/users-not-in-company');
-        const isInCompanyRoute = this.router.url.includes('/dashboard/users');
-
-        let filtered = [...this.users];
-
-        // if (isNotInCompanyRoute) {
-        //   filtered = filtered.filter((user) => user.role === Roles.USER);
-        // } else if (isInCompanyRoute) {
-        //   filtered = filtered.filter(
-        //     (user) => user.role === Roles.ADMIN || user.role === Roles.SUPER_ADMIN
-        //   );
-        // }
-
-        this.filteredUsers = filtered;
+        this.filteredUsers = [...this.users];
         this.isError = false;
         this.isLoading = result.isFetching;
         this.cdr.detectChanges();
@@ -258,6 +217,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
     if (this.unsubscribeFn) {
       this.unsubscribeFn();
     }
+    this.searchSubject.complete()
   }
 
 

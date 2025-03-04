@@ -1,10 +1,11 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, Observable, retry, throwError } from 'rxjs';
+import { catchError, firstValueFrom, Observable, retry, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../../users/models/user';
 import { CreateUserCompanyDto, UpdateUserCompanyDto } from '../models/UserCompanyDto';
+import { QueryClient, QueryObserver } from '@tanstack/query-core';
 
 // Interfaces pour les DTOs
 export interface CreateUserDto {
@@ -27,11 +28,73 @@ export interface UpdateUserDto extends Partial<CreateUserDto> {}
 export class UserService {
   private baseUrl = `${environment.apiUrl}users`;
   private headers = new HttpHeaders().set('Content-Type', 'application/json');
-
+  private queryClient: QueryClient;
   constructor(
     private http: HttpClient,
     private router: Router
-  ) { }
+  ) {   this.queryClient = new QueryClient(); }
+
+
+
+  createUsersQueryObserver(queryParams: {
+    pageIndex: number;
+    pageSize: number;
+    searchName: string;
+    searchUserName: string;
+    searchEmail: string;
+    searchRole: string;
+  }) {
+    return new QueryObserver<any, Error>(this.queryClient, {
+      queryKey: [
+        'usersList',
+        queryParams.pageIndex,
+        queryParams.pageSize,
+        queryParams.searchName,
+        queryParams.searchUserName,
+        queryParams.searchEmail,
+        queryParams.searchRole,
+      ],
+      queryFn: async (): Promise<any> => {
+        const filters = {
+          searchName: queryParams.searchName,
+          searchUserName: queryParams.searchUserName,
+          searchEmail: queryParams.searchEmail,
+          searchRole: queryParams.searchRole,
+        };
+
+        try {
+          let params = new HttpParams()
+            .set('page', queryParams.pageIndex.toString())
+            .set('pageSize', queryParams.pageSize.toString());
+
+          if (filters.searchName) {
+            params = params.set('searchName', filters.searchName);
+          }
+          if (filters.searchUserName) {
+            params = params.set('searchUserName', filters.searchUserName);
+          }
+          if (filters.searchEmail) {
+            params = params.set('searchEmail', filters.searchEmail);
+          }
+          if (filters.searchRole) {
+            params = params.set('searchRole', filters.searchRole);
+          }
+
+          const response = await firstValueFrom(
+            this.http.get<any>(this.baseUrl, { params })
+          );
+
+          return {
+            data: response.data,
+            total: response.total,
+          };
+        } catch (error) {
+          console.error('Error in queryFn:', error);
+          throw new Error('Invalid data format received');
+        }
+      },
+    });
+  }
 
   // Créer un nouvel utilisateur
   create(createUserDto: CreateUserDto): Observable<User> {
